@@ -1,0 +1,183 @@
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&display=swap");
+
+.ourServiceSection {
+  position: relative;
+  padding: 58px 18px 70px;
+  background: #ffffff;
+  font-family: "Alexandria", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Background image */
+.ourServiceBg {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  height: auto;
+  opacity: 1;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Header */
+.ourServiceHeader {
+  position: relative;
+  z-index: 3;
+  max-width: 850px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+
+.ourServiceLabel {
+  margin: 0 0 12px;
+  color: #2195f4;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.ourServiceTitle {
+  margin: 0;
+  color: #1f3472;
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ourServiceSubtitle {
+  margin: 18px auto 0;
+  max-width: 760px;
+  color: #475467;
+  font-size: 20px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+/* Blue box */
+.ourServiceBox {
+  position: relative;
+  z-index: 2;
+  max-width: 1140px;
+  margin: 0 auto;
+  background: rgba(238, 247, 254, 0.86);
+  border-radius: 0 0 10px 10px;
+  padding: 48px 36px 36px;
+}
+
+/* Grid */
+.ourServiceGrid {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 70px;
+  row-gap: 52px;
+}
+
+.ourServiceCard {
+  min-height: 185px;
+}
+
+.ourServiceIconWrap {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  background: #e6f3ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.ourServiceIcon {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  display: block;
+}
+
+.ourServiceCardTitle {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.ourServiceCardDesc {
+  margin: 0 0 18px;
+  color: #475467;
+  font-size: 16px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.ourServiceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #2195f4;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ourServiceLink span {
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.ourServiceLink:hover {
+  color: #6b46c1;
+}
+
+.ourServiceLink:hover span {
+  transform: translateX(4px);
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .ourServiceBg {
+    width: 620px;
+    top: 50px;
+  }
+
+  .ourServiceGrid {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ourServiceSection {
+    padding: 48px 16px 58px;
+  }
+
+  .ourServiceBg {
+    width: 520px;
+    top: 70px;
+    opacity: 0.5;
+  }
+
+  .ourServiceTitle {
+    font-size: 28px;
+  }
+
+  .ourServiceSubtitle {
+    font-size: 15px;
+  }
+
+  .ourServiceBox {
+    padding: 34px 22px;
+  }
+
+  .ourServiceGrid {
+    grid-template-columns: 1fr;
+    row-gap: 34px;
+  }
+}

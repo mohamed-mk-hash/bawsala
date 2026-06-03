@@ -1,0 +1,385 @@
+/* Contact.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+:root{
+  --primary: #2195F4;
+  --primary-hover: #6B46C1; /* purple-ish hover like your screenshot */
+}
+
+.contactPage {
+  padding: clamp(34px, 4vw, 76px) 16px;
+  background: #fff;
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
+}
+
+.contactPage__container {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(28px, 4vw, 60px);
+  align-items: start;
+}
+
+.contactForm__title {
+  margin: 0;
+  font-size: 35px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.contactForm__subtitle {
+  font-size: 18px;
+  line-height: 1.7;
+  font-weight: 400;
+  color: #64748b;
+  margin-bottom: 40px;
+}
+
+/* Form grid */
+.contactForm__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 22px;
+}
+
+.contactField--full {
+  grid-column: 1 / -1;
+}
+
+.contactField__label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+}
+
+.contactField__input,
+.contactField__textarea {
+  width: 100%;
+  border: 0.5px solid rgba(15, 23, 42, 0.18);
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  outline: none;
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+  color: #667085;
+}
+
+.contactField__textarea {
+  resize: none;
+  padding-top: 12px;
+}
+
+.contactField__input:focus,
+.contactField__textarea:focus {
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-hover), transparent 82%);
+}
+
+/* ✅ Phone: one container, same border */
+.contactPhoneField{
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.contactPhoneField:focus-within{
+  border-color: color-mix(in srgb, var(--primary), #ffffff 30%);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary), transparent 82%);
+}
+
+.contactPhoneField__select{
+  appearance: none;
+  border: none;
+  outline: none;
+  height: 44px;
+  padding: 0 36px 0 14px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+
+  /* arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(15, 23, 42, 0.65) 50%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.65) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+
+  border-right: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.contactPhoneField__input{
+  border: none;
+  outline: none;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 16px;
+  color: #0f172a;
+  background: transparent;
+}
+
+.contactPhoneField__input::placeholder{
+  color: rgba(100, 116, 139, 0.9);
+}
+
+/* Checkbox */
+.contactCheck {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.contactCheck__box {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  accent-color: var(--primary);
+}
+
+.contactCheck__text {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.contactCheck__text a {
+  color: #0f172a;
+  text-underline-offset: 3px;
+}
+
+/* ✅ Submit button colors */
+.contactForm__submit {
+  margin-top: 6px;
+  height: 50px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--primary), transparent 75%);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.contactForm__submit:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--primary-hover), transparent 75%);
+  transform: translateY(-1px);
+}
+
+.contactForm__submit:active {
+  transform: translateY(0);
+}
+
+/* Right image */
+.contactSide {
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.contactSide__img {
+  width: 100%;
+  height: min(740px, 72vh);
+  object-fit: cover;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .contactPage__container {
+    grid-template-columns: 1fr;
+  }
+
+  .contactSide__img {
+    height: 380px;
+  }
+
+  .contactForm__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Contact Cards Section ===== */
+
+.contactCards {
+  padding: clamp(48px, 6vw, 78px) 16px;
+  background: #fff;
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.contactCards__container {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.contactCards__kicker {
+  margin: 0 50 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.contactCards__title {
+  margin: 0;
+  font-size: 45px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.contactCards__subtitle {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: #475467;
+  max-width: 680px;
+}
+
+.contactCards__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.contactCard {
+  background: #F9FAFB;
+  padding: 22px 22px 24px;
+  min-height: 220px;
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+
+.contactCard:hover {
+  transform: translateY(-4px);
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.08);
+}
+
+.contactCard__iconWrap {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--primary);
+  display: grid;
+  place-items: center;
+  margin-bottom: 60px;
+}
+
+.contactCard__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* makes icon white */
+}
+
+.contactCard__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.contactCard__desc {
+  margin: 10px 0 14px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.contactCard__link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.contactCard__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* responsive */
+@media (max-width: 1050px) {
+  .contactCards__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .contactCards__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contactPageRoot[dir="rtl"],
+.contactPageRoot[dir="rtl"] * {
+  font-family: "Alexandria", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.contactPageRoot[dir="rtl"] .contactForm,
+.contactPageRoot[dir="rtl"] .contactCards__container,
+.contactPageRoot[dir="rtl"] .contactCard {
+  text-align: right;
+}
+
+.contactPageRoot[dir="rtl"] .contactField__label {
+  text-align: right;
+}
+
+.contactPageRoot[dir="rtl"] .contactField__input,
+.contactPageRoot[dir="rtl"] .contactField__textarea,
+.contactPageRoot[dir="rtl"] .contactPhoneField__input {
+  text-align: right;
+  font-family: "Alexandria", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.contactPageRoot[dir="rtl"] .contactPhoneField {
+  grid-template-columns: 1fr 92px;
+}
+
+.contactPageRoot[dir="rtl"] .contactPhoneField__select {
+  order: 2;
+  border-right: none;
+  border-left: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 0 14px 0 36px;
+  background-position: 16px 50%, 21px 50%;
+}
+
+.contactPageRoot[dir="rtl"] .contactPhoneField__input {
+  order: 1;
+}
+
+.contactPageRoot[dir="rtl"] .contactCheck {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.contactPageRoot[dir="rtl"] .contactCards__subtitle {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.contactPageRoot[dir="rtl"] .contactCard__iconWrap {
+  margin-left: auto;
+  margin-right: 0;
+}
