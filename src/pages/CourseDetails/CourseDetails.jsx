@@ -27,7 +27,7 @@ import UserIcon from "../../assets/user.png";
 import shareIcon from "../../assets/ShareFat.png";
 import videoImage from "../../assets/video_explicatif.jpg";
 import shoppingCartIcon from "../../assets/shopping-cart.png";
-import homeIcon from "../../assets/home_icon.png";
+import homeIcon from "../../assets/Home_icon.png";
 
 import instructorFeatured from "../../assets/instructor_featured.jpg";
 import bawsalaLogo from "../../assets/bawsala-logo.png";
@@ -640,6 +640,24 @@ const CourseDetails = () => {
     };
   }, [course?.id, course?.isFree, currentUser]);
 
+  useEffect(() => {
+    const removeOwnedCourseFromCart = async () => {
+      const user = auth.currentUser || currentUser;
+
+      if (!hasCourseAccess || !course?.id || !user) return;
+
+      try {
+        const cartRef = doc(db, "users", user.uid, "cart", course.id);
+        await deleteDoc(cartRef);
+        setIsInCart(false);
+      } catch (error) {
+        console.error("Error removing owned course from cart:", error);
+      }
+    };
+
+    removeOwnedCourseFromCart();
+  }, [hasCourseAccess, course?.id, currentUser]);
+
   if (loading) {
     return (
       <main className="course-details-page" dir={isArabic ? "rtl" : "ltr"}>
@@ -699,6 +717,10 @@ const CourseDetails = () => {
     priceValue
   );
 
+  const courseIsOwned = !checkingAccess && hasCourseAccess;
+  const startLearningText = localizedCourse.startLearningText ||
+    (isArabic ? "ابدأ التعلم" : "Start learning");
+
   const featuredImageUrl = course.featuredImageUrl || courseImage;
   const instructorAvatarUrl = course.instructorAvatarUrl || instructorImg;
   const instructorFeaturedUrl =
@@ -710,6 +732,11 @@ const CourseDetails = () => {
   const badgeColor = course.badgeColor || "purple";
 
   const handleToggleCart = async () => {
+    if (hasCourseAccess) {
+      setActiveTab(1);
+      return;
+    }
+
     const user = auth.currentUser || currentUser;
 
     if (!user) {
@@ -933,24 +960,38 @@ const CourseDetails = () => {
                 <bdi>{priceLabel}</bdi>
               </p>
 
-              <button
-                type="button"
-                className={`details-cart-btn ${isInCart ? "is-in-cart" : ""}`}
-                onClick={handleToggleCart}
-                disabled={cartBusy}
-              >
-                <img src={shoppingCartIcon} alt="" className="details-cart-img" />
+              {courseIsOwned ? (
+                <button
+                  type="button"
+                  className="details-cart-btn details-access-btn"
+                  onClick={() => setActiveTab(1)}
+                >
+                  {startLearningText}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`details-cart-btn ${isInCart ? "is-in-cart" : ""}`}
+                  onClick={handleToggleCart}
+                  disabled={cartBusy || checkingAccess}
+                >
+                  <img src={shoppingCartIcon} alt="" className="details-cart-img" />
 
-                {cartBusy
-                  ? isArabic
-                    ? "جاري التحديث..."
-                    : "Updating..."
-                  : isInCart
-                  ? localizedCourse.removeFromCartText ||
-                    (isArabic ? "إزالة من السلة" : "Remove from cart")
-                  : localizedCourse.addToCartText ||
-                    (isArabic ? "أضف إلى السلة" : "Add to cart")}
-              </button>
+                  {cartBusy
+                    ? isArabic
+                      ? "جاري التحديث..."
+                      : "Updating..."
+                    : checkingAccess
+                    ? isArabic
+                      ? "جاري التحقق..."
+                      : "Checking..."
+                    : isInCart
+                    ? localizedCourse.removeFromCartText ||
+                      (isArabic ? "إزالة من السلة" : "Remove from cart")
+                    : localizedCourse.addToCartText ||
+                      (isArabic ? "أضف إلى السلة" : "Add to cart")}
+                </button>
+              )}
 
               {cartError && <p className="details-cart-error">{cartError}</p>}
             </div>

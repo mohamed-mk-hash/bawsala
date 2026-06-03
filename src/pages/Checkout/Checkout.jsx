@@ -19,7 +19,6 @@ import profile2 from "../../assets/profile2.jpg";
 import profile3 from "../../assets/profile3.jpg";
 
 import chargilyLogo from "../../assets/chargily.svg";
-import stripeLogo from "../../assets/stripe.png";
 
 import paymentWorkImg from "../../assets/payment-work.png";
 import paymentErrorImg from "../../assets/payment-error.png";
@@ -163,8 +162,6 @@ const Checkout = () => {
 
   const [couponCode, setCouponCode] = useState("");
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState("chargily");
   const [acceptedPolicies, setAcceptedPolicies] = useState(true);
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [paymentResult, setPaymentResult] = useState(null);
@@ -416,7 +413,7 @@ const Checkout = () => {
       },
       body: JSON.stringify({
         amount: estimatedTotal,
-        paymentMethod: selectedPaymentMethod,
+        paymentMethod: "chargily",
         billingInfo,
         courses: checkoutCourses.map((course) => ({
           id: course.courseId || course.id,
@@ -723,28 +720,6 @@ window.location.assign(data.paymentUrl);
               {text.selectPaymentMethod}
             </p>
 
-            <div className="checkout-payment-tabs">
-              <button
-                type="button"
-                className={`checkout-payment-tab ${
-                  selectedPaymentMethod === "chargily" ? "active" : ""
-                }`}
-                onClick={() => setSelectedPaymentMethod("chargily")}
-              >
-                Chargily
-              </button>
-
-              <button
-                type="button"
-                className={`checkout-payment-tab ${
-                  selectedPaymentMethod === "stripe" ? "active" : ""
-                }`}
-                onClick={() => setSelectedPaymentMethod("stripe")}
-              >
-                Stripe
-              </button>
-            </div>
-
             <div className="checkout-payment-method-box">
               <h3>{text.choosePaymentMethod}</h3>
 
@@ -753,8 +728,8 @@ window.location.assign(data.paymentUrl);
                   type="radio"
                   name="paymentMethod"
                   value="chargily"
-                  checked={selectedPaymentMethod === "chargily"}
-                  onChange={() => setSelectedPaymentMethod("chargily")}
+                  checked
+                  readOnly
                 />
 
                 <span className="checkout-payment-method-logo">
@@ -766,26 +741,6 @@ window.location.assign(data.paymentUrl);
                 </span>
 
                 <span>Chargily</span>
-              </label>
-
-              <label className="checkout-payment-method">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="stripe"
-                  checked={selectedPaymentMethod === "stripe"}
-                  onChange={() => setSelectedPaymentMethod("stripe")}
-                />
-
-                <span className="checkout-payment-method-logo">
-                  <img
-                    className="checkout-payment-logo-img checkout-payment-logo-img--stripe"
-                    src={stripeLogo}
-                    alt="Stripe"
-                  />
-                </span>
-
-                <span>Stripe</span>
               </label>
 
               <label className="checkout-payment-check">
