@@ -33,7 +33,7 @@ export default function Home() {
     const confirmPayment = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/confirm-payment-success",
+          "/api/confirm-payment-success",
           {
             method: "POST",
             headers: {

@@ -39,8 +39,7 @@ import profile1 from "../../assets/profile1.jpg";
 import profile2 from "../../assets/profile2.jpg";
 import profile3 from "../../assets/profile3.jpg";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 
 const getInitialLanguage = () => {
