@@ -20,14 +20,74 @@ const chargily = new ChargilyClient({
 
 const app = express();
 
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-  ],
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+
+      // Add your production frontend URL here later, for example:
+      // "https://yourdomain.com",
+    ],
+  })
+);
 
 app.use(express.json());
+
+const PORT = process.env.PORT || 5000;
+
+/* =========================
+   Helpers
+========================= */
+
+async function getAuthenticatedUserId(req) {
+  const authHeader = req.headers.authorization || "";
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.replace("Bearer ", "").trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const decodedToken = await admin.auth().verifyIdToken(token);
+
+  return decodedToken.uid;
+}
+
+function getYouTubeEmbedUrl(url) {
+  const cleanUrl = String(url || "").trim();
+
+  if (!cleanUrl) return "";
+
+  try {
+    const parsedUrl = new URL(cleanUrl);
+    let videoId = "";
+
+    if (parsedUrl.hostname.includes("youtu.be")) {
+      videoId = parsedUrl.pathname.replace("/", "");
+    } else if (parsedUrl.pathname.includes("/shorts/")) {
+      videoId = parsedUrl.pathname.split("/shorts/")[1]?.split("/")[0] || "";
+    } else if (parsedUrl.pathname.includes("/embed/")) {
+      videoId = parsedUrl.pathname.split("/embed/")[1]?.split("/")[0] || "";
+    } else {
+      videoId = parsedUrl.searchParams.get("v") || "";
+    }
+
+    return videoId
+      ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`
+      : cleanUrl;
+  } catch (error) {
+    return cleanUrl;
+  }
+}
+
+/* =========================
+   Test routes
+========================= */
 
 app.get("/", (req, res) => {
   res.json({
@@ -44,7 +104,9 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+/* =========================
+   Create Chargily payment
+========================= */
 
 app.post("/api/create-payment", async (req, res) => {
   try {
@@ -64,7 +126,11 @@ app.post("/api/create-payment", async (req, res) => {
       });
     }
 
-    if (!billingInfo?.firstName || !billingInfo?.lastName || !billingInfo?.email) {
+    if (
+      !billingInfo?.firstName ||
+      !billingInfo?.lastName ||
+      !billingInfo?.email
+    ) {
       return res.status(400).json({
         ok: false,
         message: "Missing billing information.",
@@ -75,28 +141,28 @@ app.post("/api/create-payment", async (req, res) => {
       .toString(36)
       .slice(2, 8)}`;
 
-      const orderRef = db.collection("orders").doc(orderId);
+    const orderRef = db.collection("orders").doc(orderId);
 
-await orderRef.set({
-  orderId,
-  status: "pending",
-  amount: Number(amount),
-  currency: "DZD",
-  paymentMethod,
-  paymentProvider: "chargily",
-  userId: userId || null,
-  billingInfo: {
-    firstName: billingInfo.firstName || "",
-    lastName: billingInfo.lastName || "",
-    email: billingInfo.email || "",
-    countryCode: billingInfo.countryCode || "DZ",
-    phoneNumber: billingInfo.phoneNumber || "",
-    notes: billingInfo.notes || "",
-  },
-  courses: Array.isArray(courses) ? courses : [],
-  createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-});
+    await orderRef.set({
+      orderId,
+      status: "pending",
+      amount: Number(amount),
+      currency: "DZD",
+      paymentMethod,
+      paymentProvider: "chargily",
+      userId: userId || null,
+      billingInfo: {
+        firstName: billingInfo.firstName || "",
+        lastName: billingInfo.lastName || "",
+        email: billingInfo.email || "",
+        countryCode: billingInfo.countryCode || "DZ",
+        phoneNumber: billingInfo.phoneNumber || "",
+        notes: billingInfo.notes || "",
+      },
+      courses: Array.isArray(courses) ? courses : [],
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
     const fullName = `${billingInfo.firstName} ${billingInfo.lastName}`.trim();
 
@@ -129,24 +195,24 @@ await orderRef.set({
     console.log("Chargily checkout created:", checkout);
 
     const paymentUrl = String(checkout.checkout_url || "").replace(
-  /^http:\/\//,
-  "https://"
-);
+      /^http:\/\//,
+      "https://"
+    );
 
-if (!paymentUrl) {
-  return res.status(500).json({
-    ok: false,
-    message: "Chargily did not return a payment URL.",
-  });
-}
+    if (!paymentUrl) {
+      return res.status(500).json({
+        ok: false,
+        message: "Chargily did not return a payment URL.",
+      });
+    }
 
     return res.json({
-  ok: true,
-  message: "Chargily checkout created successfully.",
-  orderId,
-  paymentUrl,
-  checkout,
-});
+      ok: true,
+      message: "Chargily checkout created successfully.",
+      orderId,
+      paymentUrl,
+      checkout,
+    });
   } catch (error) {
     console.error("Create Chargily payment error:", error);
 
@@ -157,6 +223,10 @@ if (!paymentUrl) {
     });
   }
 });
+
+/* =========================
+   Confirm payment success
+========================= */
 
 app.post("/api/confirm-payment-success", async (req, res) => {
   try {
@@ -247,19 +317,28 @@ app.post("/api/confirm-payment-success", async (req, res) => {
   }
 });
 
-// Add this endpoint to server/index.js before app.listen.
-// This validates that the user bought the course before returning the video URL.
-// IMPORTANT: this reduces casual sharing, but YouTube URLs cannot be made fully private.
-// For real protection use Vimeo private/domain-level privacy, Cloudflare Stream signed URLs, or another signed video service.
+/* =========================
+   Protected course video
+========================= */
 
 app.post("/api/course-module-video", async (req, res) => {
   try {
-    const { userId, courseId, moduleIndex } = req.body;
+    res.set("Cache-Control", "no-store");
 
-    if (!userId || !courseId || moduleIndex === undefined) {
+    const userId = await getAuthenticatedUserId(req);
+    const { courseId, moduleIndex } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        message: "You must be logged in to access this video.",
+      });
+    }
+
+    if (!courseId || moduleIndex === undefined) {
       return res.status(400).json({
         ok: false,
-        message: "Missing userId, courseId, or moduleIndex.",
+        message: "Missing courseId or moduleIndex.",
       });
     }
 
@@ -292,6 +371,7 @@ app.post("/api/course-module-video", async (req, res) => {
     }
 
     const courseData = courseSnapshot.data();
+
     const modules = Array.isArray(courseData.programmeModules)
       ? courseData.programmeModules
       : [];
@@ -321,33 +401,9 @@ app.post("/api/course-module-video", async (req, res) => {
   }
 });
 
-function getYouTubeEmbedUrl(url) {
-  const cleanUrl = String(url || "").trim();
-
-  if (!cleanUrl) return "";
-
-  try {
-    const parsedUrl = new URL(cleanUrl);
-    let videoId = "";
-
-    if (parsedUrl.hostname.includes("youtu.be")) {
-      videoId = parsedUrl.pathname.replace("/", "");
-    } else if (parsedUrl.pathname.includes("/shorts/")) {
-      videoId = parsedUrl.pathname.split("/shorts/")[1]?.split("/")[0] || "";
-    } else if (parsedUrl.pathname.includes("/embed/")) {
-      videoId = parsedUrl.pathname.split("/embed/")[1]?.split("/")[0] || "";
-    } else {
-      videoId = parsedUrl.searchParams.get("v") || "";
-    }
-
-    return videoId
-      ? `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`
-      : cleanUrl;
-  } catch (error) {
-    return cleanUrl;
-  }
-}
-
+/* =========================
+   Start server
+========================= */
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);

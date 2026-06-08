@@ -2586,6 +2586,7 @@
   background: #000000;
   border-radius: 12px;
   overflow: hidden;
+  position: relative;
 }
 
 .course-media-modal__frame iframe,
@@ -2599,6 +2600,196 @@
 
 .course-media-modal__frame video {
   object-fit: contain;
+}
+
+.course-youtube-private-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  overflow: hidden;
+}
+
+.course-youtube-private-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #000000;
+  pointer-events: none;
+}
+
+.course-youtube-blocker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.course-youtube-blocker--top {
+  top: 0;
+  height: 74px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.92),
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+.course-youtube-blocker--bottom {
+  bottom: 0;
+  height: 86px;
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(0, 0, 0, 0.6),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+.course-youtube-custom-controls {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 16px;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: 42px auto 1fr auto 42px;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.course-youtube-private-frame.is-controls-visible .course-youtube-custom-controls,
+.course-youtube-private-frame.is-paused .course-youtube-custom-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.course-youtube-center-toggle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 30;
+  transform: translate(-50%, -50%);
+  width: 82px;
+  height: 82px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.course-youtube-private-frame.is-controls-visible .course-youtube-center-toggle,
+.course-youtube-private-frame.is-paused .course-youtube-center-toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.course-youtube-center-toggle:hover {
+  background: rgba(0, 0, 0, 0.84);
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.course-youtube-fullscreen {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #020617;
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.course-youtube-private-frame:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+}
+
+.course-youtube-private-frame:fullscreen iframe {
+  width: 100vw;
+  height: 100vh;
+}
+
+.course-youtube-play-toggle {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #020617;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.course-youtube-time {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.course-youtube-range {
+  width: 100%;
+  accent-color: #2195f4;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .course-youtube-custom-controls {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: 36px auto 1fr auto 36px;
+    gap: 8px;
+  }
+
+  .course-youtube-play-toggle {
+    width: 34px;
+    height: 34px;
+  }
+
+  .course-youtube-time {
+    font-size: 11px;
+  }
+
+  .course-youtube-center-toggle {
+  width: 64px;
+  height: 64px;
+  font-size: 22px;
+}
+
+.course-youtube-fullscreen {
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+}
 }
 
 .course-details-page[dir="rtl"] .course-programme-actions {

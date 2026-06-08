@@ -468,11 +468,12 @@
 }
 
 .service-packages-header p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
+  margin-bottom: 30px !important;
   color: #2195f4;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .service-packages-header h2 {
@@ -550,10 +551,31 @@
 .service-package-card h3 {
   margin: 0;
   color: #343842;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.25;
-  font-weight: 800;
+  font-weight: 900;
   text-align: center;
+}
+
+.service-package-card__price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.service-package-card__price-amount {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.service-package-card__price-meta {
+  direction: rtl;
+  unicode-bidi: isolate;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .service-package-card h4 {

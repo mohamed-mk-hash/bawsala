@@ -1954,8 +1954,7 @@
 .about-page[dir="rtl"] .principles__about,
 .about-page[dir="rtl"] .mission-values__container,
 .about-page[dir="rtl"] .impact-section__header,
-.about-page[dir="rtl"] .team-section__header,
-.about-page[dir="rtl"] .contactCta__card {
+.about-page[dir="rtl"] .team-section__header {
   text-align: right;
 }
 

@@ -6,7 +6,7 @@ import { db } from "../firebase";
 import heroImg from "../assets/hero-img.jpg";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, FreeMode } from "swiper/modules";
+import { Autoplay } from "swiper/modules";
 
 import "swiper/css";
 
@@ -89,6 +89,10 @@ export default function Hero() {
     return hero.logos.filter((logo) => logo?.image?.url);
   }, [hero]);
 
+  const repeatedLogos = useMemo(() => {
+    return [...logos, ...logos, ...logos];
+  }, [logos]);
+
   if (loading) {
     return (
       <section className="heroSection" dir={isArabic ? "rtl" : "ltr"}>
@@ -129,6 +133,8 @@ export default function Hero() {
   const trustTitle = getLocalizedText(hero.trustTitle, language);
   const trustStatus = getLocalizedText(hero.trustStatus, language);
 
+  const heroImageUrl = hero?.image?.url || hero?.heroImage?.url || heroImg;
+
   return (
     <section className="heroSection" dir={isArabic ? "rtl" : "ltr"}>
       <div className="heroContainer">
@@ -162,7 +168,7 @@ export default function Hero() {
           <div className="heroImageWrap">
             <img
               className="heroImage"
-              src={heroImg}
+              src={heroImageUrl}
               alt={highlightedTitle || "Hero image"}
             />
 
@@ -194,21 +200,19 @@ export default function Hero() {
         <div className="heroLogosWrap">
           <Swiper
             className="heroLogosSwiper"
-            modules={[Autoplay, FreeMode]}
+            modules={[Autoplay]}
             loop={true}
-            speed={6000}
-            freeMode={true}
+            speed={4000}
             slidesPerView="auto"
-            spaceBetween={50}
-            centeredSlides={false}
+            spaceBetween={80}
             autoplay={{
-              delay: 0,
+              delay: 1,
               disableOnInteraction: false,
               pauseOnMouseEnter: false,
             }}
             allowTouchMove={false}
           >
-            {logos.map((logo, index) => (
+            {repeatedLogos.map((logo, index) => (
               <SwiperSlide
                 key={`${logo?.name || "logo"}-${index}`}
                 className="heroLogoSlide"

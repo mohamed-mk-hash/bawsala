@@ -6,6 +6,7 @@ import logo from "../assets/bawsala-logo.png";
 import facebookIcon from "../assets/facebook.png";
 import instagramIcon from "../assets/instagram.png";
 import linkedinIcon from "../assets/linkedin.png";
+import whatsappIcon from "../assets/whatsapp.png";
 import xIcon from "../assets/x.png";
 
 const getInitialLanguage = () => {
@@ -57,6 +58,15 @@ export default function Footer() {
 
   const isArabic = language === "ar";
   const text = FOOTER_TEXT[language];
+
+  const whatsappNumber = "213540299322";
+const whatsappMessage = encodeURIComponent(
+  isArabic
+    ? "مرحباً بوصلة، أود الاستفسار عن خدماتكم."
+    : "Hello Bawsala, I would like to ask about your services."
+);
+
+const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   useEffect(() => {
     const handleLanguageChanged = (event) => {
@@ -127,6 +137,15 @@ export default function Footer() {
               >
                 <img src={facebookIcon} alt="" />
               </a>
+
+              <a
+  href={whatsappLink}
+  target="_blank"
+  rel="noreferrer"
+  aria-label="WhatsApp"
+>
+  <img src={whatsappIcon} alt="" />
+</a>
 
               <a
                 href="https://instagram.com"

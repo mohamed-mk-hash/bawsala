@@ -1346,3 +1346,976 @@
   border-radius: 4px;
   padding: 3px;
 }
+/* =========================================================
+   RESPONSIVE DYNAMIC SERVICE DETAIL - FINAL OVERRIDES
+   Paste this file as the full ServiceDetail.css or keep it
+   after the previous styles.
+========================================================= */
+
+.service-detail-container,
+.service-detail-contact-cta__container {
+  width: min(100% - 32px, 1260px);
+}
+
+.service-detail-hero__eyebrow,
+.service-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(33, 149, 244, 0.16);
+  color: #2195f4;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 8px 13px;
+  margin-bottom: 14px;
+}
+
+.service-detail-hero__eyebrow {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+}
+
+.service-section-header--compact {
+  margin-bottom: 0;
+}
+
+.service-section-header--center {
+  max-width: 780px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.service-section-header--center p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.service-overview-section,
+.service-process-section,
+.service-pricing-section,
+.service-faq-section {
+  width: 100%;
+  padding: 0 0 74px;
+  background: #ffffff;
+}
+
+.service-overview-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
+  gap: 34px;
+  align-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  padding: clamp(24px, 4vw, 44px);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+.service-overview-card--text-only {
+  grid-template-columns: 1fr;
+}
+
+.service-overview-content h2,
+.service-process-section h2,
+.service-pricing-section h2,
+.service-faq-section h2 {
+  margin: 0;
+  color: #172b68;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.service-overview-description {
+  margin: 20px 0 0;
+  color: #344054;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.service-overview-image-wrap {
+  overflow: hidden;
+  border-radius: 18px;
+  min-height: 260px;
+  background: #eaf6ff;
+}
+
+.service-overview-image-wrap img {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  object-fit: cover;
+  display: block;
+}
+
+.service-process-grid,
+.service-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.service-process-card,
+.service-pricing-card {
+  opacity: 0;
+  animation: serviceDetailFadeUp 650ms ease both;
+  animation-delay: calc(100ms + var(--animation-order) * 80ms);
+}
+
+.service-process-card {
+  position: relative;
+  min-height: 220px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: #f8fafc;
+  padding: 28px;
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.service-process-card::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  background: #2195f4;
+}
+
+.service-process-card:hover,
+.service-pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.09);
+}
+
+.service-process-card span {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #eaf6ff;
+  color: #2195f4;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.service-process-card h3 {
+  margin: 22px 0 0;
+  color: #101828;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.service-process-card p {
+  margin: 12px 0 0;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.service-pricing-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: 1px solid rgba(33, 149, 244, 0.18);
+  border-radius: 22px;
+  background: #ffffff;
+  padding: 28px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.service-pricing-card h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.service-pricing-card strong {
+  display: block;
+  margin-top: 14px;
+  color: #2195f4;
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 900;
+}
+
+.service-pricing-card p {
+  margin: 16px 0 0;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.service-pricing-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 26px;
+  display: grid;
+  gap: 12px;
+}
+
+.service-pricing-card li {
+  position: relative;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.55;
+  padding-inline-start: 26px;
+}
+
+.service-pricing-card li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #eaf6ff;
+}
+
+.service-pricing-card li::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 5px;
+  top: 8px;
+  width: 6px;
+  height: 3px;
+  border-left: 2px solid #2195f4;
+  border-bottom: 2px solid #2195f4;
+  transform: rotate(-45deg);
+}
+
+.service-pricing-card a {
+  margin-top: auto;
+  min-height: 44px;
+  border-radius: 9px;
+  background: #2195f4;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.service-pricing-card a:hover {
+  background: #1688e4;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(33, 149, 244, 0.28);
+}
+
+.service-faq-list {
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.service-faq-item {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 0;
+  overflow: hidden;
+}
+
+.service-faq-item summary {
+  cursor: pointer;
+  color: #101828;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 900;
+  padding: 20px 22px;
+  list-style: none;
+}
+
+.service-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.service-faq-item summary::after {
+  content: "+";
+  float: inline-end;
+  color: #2195f4;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.service-faq-item[open] summary::after {
+  content: "-";
+}
+
+.service-faq-item p {
+  margin: 0;
+  padding: 0 22px 22px;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* Card image fixes: prevents huge uploaded icons/images from breaking the catalog */
+.service-template-card__image-wrap,
+.service-guide-card__image {
+  background: #f8fafc;
+}
+
+.service-template-card__image-wrap {
+  width: 100%;
+  height: clamp(150px, 18vw, 220px);
+  border-radius: 9px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-template-card__image,
+.service-guide-card__image {
+  width: 100%;
+  height: clamp(150px, 18vw, 220px);
+  max-height: 220px;
+  object-fit: contain;
+  display: block;
+  padding: 10px;
+}
+
+.service-guide-card__image {
+  object-fit: cover;
+  padding: 0;
+}
+
+.service-guide-card__meta {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.service-guide-card__meta span,
+.service-guide-card small {
+  border-radius: 999px;
+  background: #eaf6ff;
+  color: #2195f4;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.service-guide-card small {
+  margin-top: 16px;
+}
+
+.service-guide-card__date {
+  display: none;
+}
+
+/* Request form: more fields, better alignment, fully responsive */
+.service-request-card {
+  align-items: stretch;
+}
+
+.service-request-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-request-left img {
+  width: 100%;
+  max-width: 470px;
+  height: auto;
+  min-height: 210px;
+  max-height: 280px;
+  margin-top: auto;
+  margin-left: 0;
+}
+
+.service-request-form {
+  width: 100%;
+}
+
+.service-request-form__group select,
+.service-request-form__group input,
+.service-request-form__group textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.service-request-form__group select {
+  height: 42px;
+  padding: 0 12px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.8) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.8) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.service-detail-page[dir="rtl"] .service-request-form__group select {
+  background-position: 18px 18px, 12px 18px;
+}
+
+.service-request-form__group select option {
+  color: #101828;
+  background: #ffffff;
+}
+
+.service-request-form__group textarea {
+  min-height: 112px;
+  height: auto;
+  resize: vertical;
+}
+
+.service-request-form__group select:focus,
+.service-request-form__group input:focus,
+.service-request-form__group textarea:focus {
+  border-color: #2195f4;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(33, 149, 244, 0.18);
+}
+
+.service-request-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
+}
+
+.service-request-alert {
+  margin: 0 0 16px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.service-request-alert--success {
+  background: rgba(34, 197, 94, 0.13);
+  color: #bbf7d0;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.service-request-alert--error {
+  background: rgba(239, 68, 68, 0.13);
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* RTL refinements */
+.service-detail-page[dir="rtl"] .service-overview-content,
+.service-detail-page[dir="rtl"] .service-process-card,
+.service-detail-page[dir="rtl"] .service-pricing-card,
+.service-detail-page[dir="rtl"] .service-faq-item {
+  text-align: right;
+}
+
+.service-detail-page[dir="rtl"] .service-section-header--center {
+  text-align: center;
+}
+
+.service-detail-page[dir="rtl"] .service-pricing-card li::after {
+  transform: rotate(-45deg);
+}
+
+.service-detail-page[dir="rtl"] .service-request-left img {
+  margin-right: 0;
+}
+
+@media (max-width: 1150px) {
+  .service-process-grid,
+  .service-pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .service-overview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .service-overview-image-wrap {
+    order: -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .service-detail-container,
+  .service-detail-contact-cta__container {
+    width: min(100% - 28px, 1260px);
+  }
+
+  .service-request-card {
+    gap: 30px;
+  }
+
+  .service-request-left img {
+    max-width: 100%;
+  }
+
+  .service-guides-panel,
+  .service-templates-panel {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 700px) {
+  .service-process-grid,
+  .service-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-overview-section,
+  .service-benefits-section,
+  .service-guides-section,
+  .service-templates-section,
+  .service-process-section,
+  .service-pricing-section,
+  .service-request-section,
+  .service-faq-section,
+  .service-testimonials-section {
+    padding-bottom: 56px;
+  }
+
+  .service-section-header {
+    margin-bottom: 30px;
+  }
+
+  .service-section-header p {
+    margin-top: 14px;
+  }
+
+  .service-overview-card,
+  .service-process-card,
+  .service-pricing-card {
+    border-radius: 16px;
+    padding: 22px;
+  }
+
+  .service-request-form__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .service-request-form__group--full {
+    grid-column: auto;
+  }
+
+  .service-request-left img {
+    min-height: 180px;
+    max-height: 230px;
+  }
+
+  .service-template-card__image-wrap,
+  .service-template-card__image,
+  .service-guide-card__image {
+    height: 190px;
+    max-height: 190px;
+  }
+}
+
+@media (max-width: 520px) {
+  .service-detail-container,
+  .service-detail-contact-cta__container {
+    width: min(100% - 22px, 1260px);
+  }
+
+  .service-guides-panel,
+  .service-templates-panel {
+    padding: 14px;
+  }
+
+  .service-guide-card,
+  .service-template-card {
+    padding: 12px;
+  }
+
+  .service-guide-card h3,
+  .service-template-card h3,
+  .service-pricing-card h3,
+  .service-process-card h3 {
+    font-size: 18px;
+  }
+
+  .service-request-card {
+    padding: 22px 14px;
+  }
+
+  .service-request-form {
+    padding: 20px 14px;
+  }
+
+  .service-request-policy {
+    align-items: flex-start;
+  }
+}
+
+/* =========================================================
+   Final fixes requested: compact resources, icon cards,
+   smaller request form, smoother interactions
+========================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+.service-detail-page {
+  overflow-x: hidden;
+}
+
+.service-detail-page section {
+  animation: serviceDetailFadeUp 520ms ease both;
+}
+
+.service-detail-hero-section {
+  animation-delay: 30ms;
+}
+
+.service-overview-section,
+.service-benefits-section,
+.service-templates-section,
+.service-process-section,
+.service-pricing-section,
+.service-guides-section,
+.service-request-section,
+.service-faq-section,
+.service-detail-contact-cta {
+  scroll-margin-top: 28px;
+}
+
+.service-guides-panel,
+.service-templates-panel {
+  width: 100%;
+  padding: clamp(18px, 3vw, 36px);
+}
+
+.service-guides-grid,
+.service-templates-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 360px));
+  justify-content: center;
+  align-items: stretch;
+}
+
+.service-card-grid--count-1 {
+  grid-template-columns: minmax(0, 380px);
+}
+
+.service-card-grid--count-2 {
+  grid-template-columns: repeat(2, minmax(0, 380px));
+}
+
+.service-guide-card,
+.service-template-card {
+  min-width: 0;
+  width: 100%;
+}
+
+.service-guide-card__image {
+  height: 210px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f8fafc;
+}
+
+.service-guide-card:not(:has(.service-guide-card__image)) {
+  padding-top: 24px;
+}
+
+.service-template-card__image-wrap {
+  height: 170px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8fafc, #eef7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+  overflow: hidden;
+}
+
+.service-template-card__image {
+  width: auto;
+  height: auto;
+  max-width: 132px;
+  max-height: 132px;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+.service-template-card h3,
+.service-guide-card h3 {
+  overflow-wrap: anywhere;
+}
+
+.service-benefit-card__icon {
+  width: 52px;
+  height: 52px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.service-benefit-card__icon img {
+  width: 100%;
+  height: 100%;
+  max-width: 30px;
+  max-height: 30px;
+  object-fit: contain;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.service-request-card {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr);
+  align-items: start;
+  gap: clamp(28px, 5vw, 56px);
+  padding: clamp(26px, 4vw, 46px);
+}
+
+.service-request-left {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+.service-request-left span {
+  margin: 20px 0 0;
+}
+
+.service-request-left img {
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  max-height: 260px;
+  margin: 28px 0 0;
+  object-fit: cover;
+}
+
+.service-request-form {
+  align-self: start;
+  padding: clamp(20px, 3vw, 30px);
+}
+
+.service-request-form__grid {
+  gap: 16px 20px;
+}
+
+.service-request-form__group textarea {
+  height: 118px;
+}
+
+.service-request-form__group select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,.8) 50%),
+    linear-gradient(135deg, rgba(255,255,255,.8) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.service-detail-page[dir="rtl"] .service-request-form__group select {
+  background-position: 18px 50%, 12px 50%;
+}
+
+.service-pricing-card a,
+.service-detail-hero__btn,
+.service-request-submit,
+.service-detail-contact-cta__btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.service-pricing-card a::after,
+.service-detail-hero__btn::after,
+.service-request-submit::after,
+.service-detail-contact-cta__btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  transform: translateX(-120%);
+  transition: transform 520ms ease;
+}
+
+.service-pricing-card a:hover::after,
+.service-detail-hero__btn:hover::after,
+.service-request-submit:hover::after,
+.service-detail-contact-cta__btn:hover::after {
+  transform: translateX(120%);
+}
+
+.service-faq-item {
+  overflow: hidden;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.service-faq-item:hover {
+  transform: translateY(-2px);
+}
+
+.service-faq-item p {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 240ms ease, transform 240ms ease, margin-top 240ms ease;
+}
+
+.service-faq-item[open] p {
+  margin-top: 14px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.service-faq-item summary::after {
+  transition: transform 220ms ease;
+}
+
+.service-faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.service-request-section:target .service-request-card,
+.service-request-card:focus-within {
+  box-shadow: 0 24px 60px rgba(33, 149, 244, 0.18);
+}
+
+@media (max-width: 1150px) {
+  .service-request-card {
+    grid-template-columns: 1fr;
+  }
+
+  .service-request-left {
+    max-width: 760px;
+  }
+
+  .service-request-left img {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 780px) {
+  .service-card-grid--count-2,
+  .service-guides-grid,
+  .service-templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-card-grid--count-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .service-template-card__image-wrap {
+    height: 148px;
+  }
+
+  .service-template-card__image {
+    max-width: 112px;
+    max-height: 112px;
+  }
+
+  .service-guide-card__image {
+    height: 190px;
+  }
+}
+
+@media (max-width: 520px) {
+  .service-request-card {
+    padding: 22px 14px;
+  }
+
+  .service-request-left h2 {
+    font-size: 24px;
+  }
+
+  .service-request-left span {
+    font-size: 14px;
+  }
+
+  .service-request-form__group input,
+  .service-request-form__group textarea,
+  .service-request-form__group select {
+    font-size: 13px;
+  }
+}
+
+/* Final deliverables icon sizing fix */
+
+.service-templates-section .service-template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.service-templates-section .service-template-card__image-wrap {
+  width: 92px;
+  height: 92px;
+  min-width: 92px;
+  min-height: 92px;
+  margin: 0 0 22px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #eef7ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.service-templates-section .service-template-card__image {
+  width: 100%;
+  height: 100%;
+  max-width: 56px;
+  max-height: 56px;
+  object-fit: contain;
+  border-radius: 0;
+  display: block;
+}
+
+.service-templates-section .service-template-card h3 {
+  margin-top: 0;
+}
+
+.service-detail-page[dir="rtl"] .service-templates-section .service-template-card {
+  align-items: flex-start;
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .service-templates-section .service-template-card__image-wrap {
+    width: 82px;
+    height: 82px;
+    min-width: 82px;
+    min-height: 82px;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .service-templates-section .service-template-card__image {
+    max-width: 50px;
+    max-height: 50px;
+  }
+}

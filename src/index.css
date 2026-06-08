@@ -58,7 +58,7 @@ body {
 }
 
 .logo {
-  height: 34px;
+  height: 60px;
   width: auto;
   display: block;
 }
@@ -950,10 +950,12 @@ body {
 }
 
 .heroLogo {
-  height: 50px;
+  height: 150px;
   width: auto;
+  max-width: 220px;
+  object-fit: contain;
   display: block;
-  opacity: 0.7;
+  opacity: 0.85;
   transition: opacity 0.3s;
 }
 

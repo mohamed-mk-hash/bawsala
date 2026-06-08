@@ -91,7 +91,9 @@ const packages = [
     id: 1,
     popular: false,
     en: {
-      price: "7 000DZ/mth",
+      priceAmount: "7 000",
+priceCurrency: "DZ",
+pricePeriod: "mth",
       title: "Compass for Nonprofit Organizations",
       included: "Included Services",
       features: [
@@ -103,23 +105,27 @@ const packages = [
       ],
     },
     ar: {
-      price: "7 000 دج/شهر",
-      title: "بوصلة للمنظمات غير الربحية",
-      included: "الخدمات المشمولة",
-      features: [
-        "استشارات أعمال",
-        "إرشاد استراتيجي شخصي",
-        "استشارة في الهوية والعلامة",
-        "جلسات استشارية شهرية",
-        "دعم أساسي في التسويق الرقمي",
-      ],
-    },
+  priceAmount: "7 000",
+  priceCurrency: "دج",
+  pricePeriod: "شهر",
+  title: "بوصلة للمنظمات غير الربحية",
+  included: "الخدمات المشمولة",
+  features: [
+    "استشارات أعمال",
+    "إرشاد استراتيجي شخصي",
+    "استشارة في الهوية والعلامة",
+    "جلسات استشارية شهرية",
+    "دعم أساسي في التسويق الرقمي",
+  ],
+},
   },
   {
     id: 2,
     popular: true,
     en: {
-      price: "7 000DZ/mth",
+     priceAmount: "7 000",
+priceCurrency: "DZ",
+pricePeriod: "mth",
       title: "Compass Leaders",
       included: "Included Services",
       features: [
@@ -130,24 +136,28 @@ const packages = [
         "Basic digital marketing support",
       ],
     },
-    ar: {
-      price: "7 000 دج/شهر",
-      title: "قادة بوصلة",
-      included: "الخدمات المشمولة",
-      features: [
-        "استشارات أعمال",
-        "إرشاد استراتيجي شخصي",
-        "استشارة في الهوية والعلامة",
-        "جلسات استشارية شهرية",
-        "دعم أساسي في التسويق الرقمي",
-      ],
-    },
+   ar: {
+  priceAmount: "7 000",
+  priceCurrency: "دج",
+  pricePeriod: "شهر",
+  title: "قادة بوصلة",
+  included: "الخدمات المشمولة",
+  features: [
+    "استشارات أعمال",
+    "إرشاد استراتيجي شخصي",
+    "استشارة في الهوية والعلامة",
+    "جلسات استشارية شهرية",
+    "دعم أساسي في التسويق الرقمي",
+  ],
+},
   },
   {
     id: 3,
     popular: false,
     en: {
-      price: "7 000DZ/mth",
+      priceAmount: "7 000",
+priceCurrency: "DZ",
+pricePeriod: "mth",
       title: "Compass for Profit Organizations",
       included: "Included Services",
       features: [
@@ -158,18 +168,20 @@ const packages = [
         "Basic digital marketing support",
       ],
     },
-    ar: {
-      price: "7 000 دج/شهر",
-      title: "بوصلة للمؤسسات الربحية",
-      included: "الخدمات المشمولة",
-      features: [
-        "استشارات أعمال",
-        "إرشاد استراتيجي شخصي",
-        "استشارة في الهوية والعلامة",
-        "جلسات استشارية شهرية",
-        "دعم أساسي في التسويق الرقمي",
-      ],
-    },
+   ar: {
+  priceAmount: "7 000",
+  priceCurrency: "دج",
+  pricePeriod: "شهر",
+  title: "بوصلة للمؤسسات الربحية",
+  included: "الخدمات المشمولة",
+  features: [
+    "استشارات أعمال",
+    "إرشاد استراتيجي شخصي",
+    "استشارة في الهوية والعلامة",
+    "جلسات استشارية شهرية",
+    "دعم أساسي في التسويق الرقمي",
+  ],
+},
   },
 ];
 
@@ -491,62 +503,6 @@ const Service = () => {
         </div>
       </section>
 
-      <section className="service-packages-section">
-        <div className="service-packages-bg-mark" aria-hidden="true"></div>
-
-        <div className="service-container">
-          <div className="service-packages-header">
-            <p>{packagesText.kicker}</p>
-
-            <h2>{packagesText.title}</h2>
-
-            <span>{packagesText.subtitle}</span>
-          </div>
-
-          <div className="service-packages-grid">
-            {packages.map((item, index) => {
-              const packageContent = item[language];
-
-              return (
-                <article
-                  className={`service-package-card ${
-                    item.popular ? "service-package-card--popular" : ""
-                  }`}
-                  style={{ "--animation-order": index }}
-                  key={item.id}
-                >
-                  {item.popular && (
-                    <div className="service-package-card__popular">
-                      {packagesText.popular}
-                    </div>
-                  )}
-
-                  <div className="service-package-card__content">
-                    <h3>{packageContent.price}</h3>
-
-                    <h4>{packageContent.title}</h4>
-
-                    <p>{packageContent.included}</p>
-
-                    <ul>
-                      {packageContent.features.map((feature) => (
-                        <li key={feature}>
-                          <img src={packagePointIcon} alt="" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Link to="/contact" className="service-package-btn">
-                      {packagesText.button}
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
     </main>
   );
 };

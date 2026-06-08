@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -218,7 +218,9 @@ const getYouTubeEmbedUrl = (url) => {
       videoId = parsedUrl.searchParams.get("v") || "";
     }
 
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : cleanUrl;
+    if (!videoId) return cleanUrl;
+
+    return `https://www.youtube-nocookie.com/embed/${videoId}`;
   } catch (error) {
     return cleanUrl;
   }
@@ -230,11 +232,21 @@ const addYouTubeAutoplay = (url) => {
 
   try {
     const parsedUrl = new URL(cleanUrl);
+
     parsedUrl.searchParams.set("autoplay", "1");
     parsedUrl.searchParams.set("rel", "0");
     parsedUrl.searchParams.set("modestbranding", "1");
-    parsedUrl.searchParams.set("controls", "1");
+    parsedUrl.searchParams.set("controls", "0");
     parsedUrl.searchParams.set("disablekb", "1");
+    parsedUrl.searchParams.set("fs", "0");
+    parsedUrl.searchParams.set("iv_load_policy", "3");
+    parsedUrl.searchParams.set("playsinline", "1");
+    parsedUrl.searchParams.set("enablejsapi", "1");
+
+    if (typeof window !== "undefined" && window.location?.origin) {
+      parsedUrl.searchParams.set("origin", window.location.origin);
+    }
+
     return parsedUrl.toString();
   } catch (error) {
     return cleanUrl;
@@ -398,6 +410,111 @@ const CourseDetails = () => {
   const [moduleVideoLoading, setModuleVideoLoading] = useState(false);
   const [moduleVideoError, setModuleVideoError] = useState("");
 
+  const youtubeFrameRef = useRef(null);
+  const youtubePlayerRef = useRef(null);
+  const youtubeProgressTimerRef = useRef(null);
+  const youtubeContainerRef = useRef(null);
+  const youtubeControlsTimerRef = useRef(null);
+
+const [youtubeControlsVisible, setYoutubeControlsVisible] = useState(true);
+
+const [youtubeProgress, setYoutubeProgress] = useState({
+  currentTime: 0,
+  duration: 0,
+  isPlaying: false,
+});
+
+const formatVideoTime = (value) => {
+  const totalSeconds = Math.max(0, Math.floor(Number(value || 0)));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const handleYoutubeToggle = () => {
+  const player = youtubePlayerRef.current;
+
+  if (!player) return;
+
+  setYoutubeControlsVisible(true);
+
+  if (youtubeProgress.isPlaying) {
+    player.pauseVideo();
+
+    setYoutubeProgress((previous) => ({
+      ...previous,
+      isPlaying: false,
+    }));
+
+    if (youtubeControlsTimerRef.current) {
+      clearTimeout(youtubeControlsTimerRef.current);
+    }
+  } else {
+    player.playVideo();
+
+    setYoutubeProgress((previous) => ({
+      ...previous,
+      isPlaying: true,
+    }));
+
+    if (youtubeControlsTimerRef.current) {
+      clearTimeout(youtubeControlsTimerRef.current);
+    }
+
+    youtubeControlsTimerRef.current = setTimeout(() => {
+      setYoutubeControlsVisible(false);
+    }, 5000);
+  }
+};  
+
+const handleYoutubeSeek = (event) => {
+  const nextTime = Number(event.target.value || 0);
+  const player = youtubePlayerRef.current;
+
+  if (!player) return;
+
+  player.seekTo(nextTime, true);
+
+  setYoutubeProgress((previous) => ({
+    ...previous,
+    currentTime: nextTime,
+  }));
+};
+
+const handleYoutubeFullscreen = async () => {
+  const element = youtubeContainerRef.current;
+
+  if (!element) return;
+
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    await element.requestFullscreen();
+  } catch (error) {
+    console.error("Fullscreen error:", error);
+  }
+};
+
+const showYoutubeControlsTemporarily = () => {
+  setYoutubeControlsVisible(true);
+
+  if (youtubeControlsTimerRef.current) {
+    clearTimeout(youtubeControlsTimerRef.current);
+  }
+
+  if (!youtubeProgress.isPlaying) {
+    return;
+  }
+
+  youtubeControlsTimerRef.current = setTimeout(() => {
+    setYoutubeControlsVisible(false);
+  }, 5000);
+};
+
   const isArabic = language === "ar";
 
   useEffect(() => {
@@ -424,6 +541,167 @@ const CourseDetails = () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [mediaModal]);
+
+  useEffect(() => {
+  if (!mediaModal || mediaModal.type !== "youtube") return;
+
+  let cancelled = false;
+
+  const clearProgressTimer = () => {
+    if (youtubeProgressTimerRef.current) {
+      clearInterval(youtubeProgressTimerRef.current);
+      youtubeProgressTimerRef.current = null;
+    }
+  };
+
+  const updateProgress = () => {
+    const player = youtubePlayerRef.current;
+
+    if (!player || typeof player.getCurrentTime !== "function") return;
+
+    const currentTime = player.getCurrentTime() || 0;
+    const duration = player.getDuration() || 0;
+
+    setYoutubeProgress((previous) => ({
+      ...previous,
+      currentTime,
+      duration,
+    }));
+  };
+
+  const createPlayer = () => {
+    if (cancelled || !youtubeFrameRef.current || !window.YT?.Player) return;
+
+    if (youtubePlayerRef.current?.destroy) {
+      youtubePlayerRef.current.destroy();
+    }
+
+    youtubePlayerRef.current = new window.YT.Player(youtubeFrameRef.current, {
+      events: {
+        onReady: (event) => {
+          const duration = event.target.getDuration() || 0;
+
+          setYoutubeProgress({
+            currentTime: 0,
+            duration,
+            isPlaying: true,
+          });
+
+          event.target.playVideo();
+
+          clearProgressTimer();
+
+          if (youtubeControlsTimerRef.current) {
+  clearTimeout(youtubeControlsTimerRef.current);
+  youtubeControlsTimerRef.current = null;
+}
+
+          youtubeProgressTimerRef.current = setInterval(() => {
+            updateProgress();
+          }, 500);
+        },
+
+        onStateChange: (event) => {
+  const isPlaying = event.data === window.YT.PlayerState.PLAYING;
+
+  setYoutubeProgress((previous) => ({
+    ...previous,
+    isPlaying,
+  }));
+
+  setYoutubeControlsVisible(true);
+
+  if (youtubeControlsTimerRef.current) {
+    clearTimeout(youtubeControlsTimerRef.current);
+  }
+
+  if (isPlaying) {
+    youtubeControlsTimerRef.current = setTimeout(() => {
+      setYoutubeControlsVisible(false);
+    }, 5000);
+  }
+
+  if (event.data === window.YT.PlayerState.ENDED) {
+    setYoutubeProgress((previous) => ({
+      ...previous,
+      currentTime: previous.duration,
+      isPlaying: false,
+    }));
+
+    setYoutubeControlsVisible(true);
+  }
+},
+      },
+    });
+  };
+
+  if (window.YT?.Player) {
+    setTimeout(createPlayer, 0);
+  } else {
+    const existingScript = document.querySelector(
+      'script[src="https://www.youtube.com/iframe_api"]'
+    );
+
+    const previousCallback = window.onYouTubeIframeAPIReady;
+
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previousCallback === "function") {
+        previousCallback();
+      }
+
+      createPlayer();
+    };
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }
+
+  return () => {
+    cancelled = true;
+
+    clearProgressTimer();
+
+    if (youtubePlayerRef.current?.destroy) {
+      youtubePlayerRef.current.destroy();
+      youtubePlayerRef.current = null;
+    }
+
+    setYoutubeProgress({
+      currentTime: 0,
+      duration: 0,
+      isPlaying: false,
+    });
+  };
+}, [mediaModal?.type, mediaModal?.url]);
+
+useEffect(() => {
+  if (!mediaModal || mediaModal.type !== "youtube") return;
+
+  const handleYoutubeKeyboard = (event) => {
+    const key = event.key.toLowerCase();
+
+    if (key === " ") {
+      event.preventDefault();
+      handleYoutubeToggle();
+      return;
+    }
+
+    if (key === "f") {
+      event.preventDefault();
+      handleYoutubeFullscreen();
+    }
+  };
+
+  window.addEventListener("keydown", handleYoutubeKeyboard);
+
+  return () => {
+    window.removeEventListener("keydown", handleYoutubeKeyboard);
+  };
+}, [mediaModal?.type, youtubeProgress.isPlaying]);
 
   useEffect(() => {
     const handleLanguageChanged = (event) => {
@@ -793,62 +1071,64 @@ const CourseDetails = () => {
   };
 
   const handleOpenModuleVideo = async (moduleItem) => {
-    const user = auth.currentUser || currentUser;
+  const user = auth.currentUser || currentUser;
 
-    if (!hasCourseAccess || !course?.id || !user) {
+  if (!hasCourseAccess || !course?.id || !user) {
+    setModuleVideoError(
+      isArabic
+        ? "يجب شراء الكورس أولاً لمشاهدة هذا الفيديو."
+        : "You need to buy this course first to watch this video."
+    );
+    return;
+  }
+
+  try {
+    setModuleVideoLoading(true);
+    setModuleVideoError("");
+
+    const token = await user.getIdToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/course-module-video`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        courseId: course.id,
+        moduleIndex: moduleItem.moduleIndex,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok || !data.embedUrl) {
       setModuleVideoError(
-        isArabic
-          ? "يجب شراء الكورس أولاً لمشاهدة هذا الفيديو."
-          : "You need to buy this course first to watch this video."
+        data.message ||
+          (isArabic
+            ? "تعذر فتح الفيديو حالياً."
+            : "Could not open the video right now.")
       );
       return;
     }
 
-    try {
-      setModuleVideoLoading(true);
-      setModuleVideoError("");
+    setMediaModal({
+      type: "youtube",
+      url: addYouTubeAutoplay(data.embedUrl),
+      title: `${moduleItem.module || ""} ${moduleItem.title || ""}`.trim(),
+    });
+  } catch (error) {
+    console.error("Error loading protected module video:", error);
 
-      const response = await fetch(`${API_BASE_URL}/api/course-module-video`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          courseId: course.id,
-          moduleIndex: moduleItem.moduleIndex,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.ok || !data.embedUrl) {
-        setModuleVideoError(
-          data.message ||
-            (isArabic
-              ? "تعذر فتح الفيديو حالياً."
-              : "Could not open the video right now.")
-        );
-        return;
-      }
-
-      setMediaModal({
-        type: "youtube",
-        url: addYouTubeAutoplay(data.embedUrl),
-        title: `${moduleItem.module || ""} ${moduleItem.title || ""}`.trim(),
-      });
-    } catch (error) {
-      console.error("Error loading protected module video:", error);
-
-      setModuleVideoError(
-        isArabic
-          ? "حدث خطأ أثناء تحميل الفيديو."
-          : "An error occurred while loading the video."
-      );
-    } finally {
-      setModuleVideoLoading(false);
-    }
-  };
+    setModuleVideoError(
+      isArabic
+        ? "حدث خطأ أثناء تحميل الفيديو."
+        : "An error occurred while loading the video."
+    );
+  } finally {
+    setModuleVideoLoading(false);
+  }
+};
 
   const tabs = [
     localizedCourse.aboutTab || (isArabic ? "حول الدورة" : "About the Course"),
@@ -1535,13 +1815,72 @@ const CourseDetails = () => {
                   <source src={mediaModal.url} type="video/mp4" />
                 </video>
               ) : (
-                <iframe
-                  src={mediaModal.url}
-                  title={mediaModal.title || "Course video"}
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                ></iframe>
+<div
+  className={`course-youtube-private-frame ${
+    youtubeControlsVisible ? "is-controls-visible" : ""
+  } ${youtubeProgress.isPlaying ? "is-playing" : "is-paused"}`}
+  ref={youtubeContainerRef}
+  onMouseMove={showYoutubeControlsTemporarily}
+  onTouchStart={showYoutubeControlsTemporarily}
+>  <iframe
+    ref={youtubeFrameRef}
+    src={mediaModal.url}
+    title={mediaModal.title || "Course video"}
+    referrerPolicy="strict-origin-when-cross-origin"
+    allow="autoplay; encrypted-media; picture-in-picture"
+  ></iframe>
+
+  <div className="course-youtube-blocker course-youtube-blocker--top"></div>
+  <div className="course-youtube-blocker course-youtube-blocker--bottom"></div>
+
+  <button
+    type="button"
+    className="course-youtube-center-toggle"
+    onClick={handleYoutubeToggle}
+    aria-label={youtubeProgress.isPlaying ? "Pause video" : "Play video"}
+  >
+    {youtubeProgress.isPlaying ? "❚❚" : "▶"}
+  </button>
+
+  <div className="course-youtube-custom-controls">
+  <button
+    type="button"
+    className="course-youtube-play-toggle"
+    onClick={handleYoutubeToggle}
+    aria-label={youtubeProgress.isPlaying ? "Pause video" : "Play video"}
+  >
+    {youtubeProgress.isPlaying ? "❚❚" : "▶"}
+  </button>
+
+  <span className="course-youtube-time">
+    {formatVideoTime(youtubeProgress.currentTime)}
+  </span>
+
+  <input
+    className="course-youtube-range"
+    type="range"
+    min="0"
+    max={youtubeProgress.duration || 0}
+    step="1"
+    value={youtubeProgress.currentTime}
+    onChange={handleYoutubeSeek}
+    aria-label="Video timeline"
+  />
+
+  <span className="course-youtube-time">
+    {formatVideoTime(youtubeProgress.duration)}
+  </span>
+
+  <button
+    type="button"
+    className="course-youtube-fullscreen"
+    onClick={handleYoutubeFullscreen}
+    aria-label="Fullscreen"
+  >
+    ⛶
+  </button>
+</div>
+</div>
               )}
             </div>
           </div>

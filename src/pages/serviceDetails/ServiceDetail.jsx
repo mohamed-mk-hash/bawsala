@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, limit, query, serverTimestamp, where } from "firebase/firestore";
 
 import "./ServiceDetail.css";
 
@@ -101,6 +101,36 @@ const getServiceDescription = (service, language) => {
   return localizedService.heroDescription || localizedService.seoDescription || "";
 };
 
+const normalizeList = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(Boolean);
+};
+
+const getItemImage = (item, localizedItem) => {
+  return (
+    localizedItem?.imageUrl ||
+    localizedItem?.iconUrl ||
+    item?.imageUrl ||
+    item?.iconUrl ||
+    ""
+  );
+};
+
+const getFeatures = (features) => {
+  if (Array.isArray(features)) {
+    return features.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof features === "string") {
+    return features
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 const getReviewData = (review, language) => {
   const localizedReview = getLocalizedObject(review, language);
   const englishReview = review?.en || {};
@@ -145,34 +175,55 @@ const getFallbackText = (language) => {
     notFound: isArabic ? "الخدمة غير موجودة" : "Service not found",
     backToServices: isArabic ? "العودة إلى الخدمات" : "Back to services",
 
-    benefitsTitle: isArabic ? "ما الذي ستحصل عليه" : "What you will get",
+    overviewLabel: isArabic ? "نظرة عامة على الخدمة" : "Service overview",
+    overviewTitle: isArabic ? "حل عملي مصمم حسب احتياجك" : "A practical solution built around your needs",
 
-    guidesTitle: isArabic ? "أدلة مجانية قابلة للتحميل" : "Free Downloadable Guides",
-    guidesDescription: isArabic
+    benefitsTitle: isArabic ? "ما الذي ستحصل عليه" : "What you will get",
+    deliverablesTitle: isArabic ? "مخرجات الخدمة" : "Service deliverables",
+    processTitle: isArabic ? "كيف نعمل" : "How we work",
+    pricingTitle: isArabic ? "الباقات والأسعار" : "Packages and pricing",
+    resourcesTitle: isArabic ? "أدلة وموارد قابلة للتحميل" : "Downloadable guides and resources",
+    resourcesDescription: isArabic
       ? "احصل على أدلة احترافية وموارد جاهزة لدعم رحلة تطوير أعمالك."
       : "Access professional guides and ready-to-use resources to support your business development journey.",
-
-    templatesTitle: isArabic ? "كتالوج القوالب الإدارية" : "Administrative Templates Catalog",
+    templatesTitle: isArabic ? "كتالوج القوالب" : "Templates Catalog",
     templatesDescription: isArabic
       ? "استكشف قوالب احترافية تساعد الشركات على تنظيم العمليات وتحسين الإدارة."
       : "Explore professionally designed templates that help businesses organize operations and improve management processes.",
+    faqsTitle: isArabic ? "الأسئلة الشائعة" : "Frequently asked questions",
 
     requestLabel: isArabic ? "طلب خدمة" : "Service request",
-    requestTitle: isArabic ? "طلب استشارة إدارية" : "Request Administrative Consultation",
+    requestTitle: isArabic ? "اطلب هذه الخدمة" : "Request this service",
     requestDescription: isArabic
-      ? "أخبرنا باحتياجات مؤسستك وسيتواصل معك فريقنا بأفضل حل مناسب."
-      : "Tell us about your business needs and our team will contact you with the best solution.",
+      ? "أخبرنا باحتياجاتك وسيتواصل معك فريقنا لاقتراح الخطة الأنسب."
+      : "Tell us about your needs and our team will contact you to suggest the most suitable plan.",
     firstName: isArabic ? "الاسم الأول" : "First name",
     lastName: isArabic ? "اللقب" : "Last name",
     email: isArabic ? "البريد الإلكتروني" : "Email",
-    message: isArabic ? "الرسالة" : "Message",
+    phone: isArabic ? "رقم الهاتف" : "Phone number",
+    company: isArabic ? "اسم المؤسسة / الشركة" : "Company / organization",
+    servicePackage: isArabic ? "الباقة المطلوبة" : "Preferred package",
+    budget: isArabic ? "الميزانية المتوقعة" : "Expected budget",
+    timeline: isArabic ? "موعد البداية أو التسليم" : "Start or delivery timeline",
+    platforms: isArabic ? "المنصات أو القنوات" : "Platforms or channels",
+    goals: isArabic ? "الأهداف الرئيسية" : "Main goals",
+    message: isArabic ? "تفاصيل إضافية" : "Additional details",
     firstNamePlaceholder: isArabic ? "الاسم الأول" : "First name",
     lastNamePlaceholder: isArabic ? "اللقب" : "Last name",
     emailPlaceholder: "you@company.com",
-    messagePlaceholder: isArabic ? "اكتب رسالتك هنا..." : "Leave us a message...",
+    phonePlaceholder: isArabic ? "+213 ..." : "+213 ...",
+    companyPlaceholder: isArabic ? "مثال: بوصلة" : "Example: Bawsala",
+    packagePlaceholder: isArabic ? "اختر باقة أو اكتب طلب مخصص" : "Choose a package or custom request",
+    budgetPlaceholder: isArabic ? "مثال: 100,000 دج" : "Example: 100,000 DZD",
+    timelinePlaceholder: isArabic ? "مثال: خلال أسبوعين" : "Example: within two weeks",
+    platformsPlaceholder: isArabic ? "Instagram, Facebook, LinkedIn..." : "Instagram, Facebook, LinkedIn...",
+    goalsPlaceholder: isArabic ? "زيادة الوعي، جذب عملاء، تحسين الهوية..." : "Awareness, leads, branding...",
+    messagePlaceholder: isArabic ? "اكتب أي تفاصيل مهمة عن الخدمة المطلوبة..." : "Share any important details about the service you need...",
     privacy: isArabic ? "أنت توافق على" : "You agree to our friendly",
     privacyLink: isArabic ? "سياسة الخصوصية" : "privacy policy",
     sendRequest: isArabic ? "إرسال الطلب" : "Send Request",
+    requestSuccess: isArabic ? "تم تسجيل طلبك بنجاح. سنتواصل معك قريباً." : "Your request was submitted successfully. We will contact you soon.",
+    requestError: isArabic ? "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى." : "Something went wrong while sending the request. Please try again.",
 
     testimonialsLabel: isArabic ? "آراء العملاء" : "TESTIMONIALS",
     testimonialsTitle: isArabic
@@ -198,16 +249,26 @@ const ServiceDetail = () => {
   const [language, setLanguage] = useState(getInitialLanguage);
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [requestMessage, setRequestMessage] = useState({ type: "", text: "" });
 
   const [requestForm, setRequestForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
+    phone: "",
+    company: "",
+    servicePackage: "",
+    budget: "",
+    timeline: "",
+    platforms: "",
+    goals: "",
     message: "",
     privacy: false,
   });
 
   const testimonialScrollerRef = useRef(null);
+  const serviceRequestRef = useRef(null);
   const TESTIMONIAL_LOOP = 3;
 
   const isArabic = language === "ar";
@@ -303,6 +364,20 @@ const ServiceDetail = () => {
     fetchService();
   }, [slug]);
 
+  const scrollToRequestForm = (event) => {
+    if (event) event.preventDefault();
+
+    serviceRequestRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    window.setTimeout(() => {
+      const firstInput = serviceRequestRef.current?.querySelector("input, select, textarea");
+      firstInput?.focus?.({ preventScroll: true });
+    }, 520);
+  };
+
   const handleRequestChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -312,21 +387,58 @@ const ServiceDetail = () => {
     }));
   };
 
-  const handleRequestSubmit = (event) => {
+  const handleRequestSubmit = async (event) => {
     event.preventDefault();
+    setRequestMessage({ type: "", text: "" });
 
-    console.log("Service request:", {
-      serviceId: service?.id,
-      serviceSlug: getServiceSlug(service),
-      serviceTitle: getServiceTitle(service, language),
-      ...requestForm,
-    });
+    if (!requestForm.privacy) {
+      setRequestMessage({
+        type: "error",
+        text: isArabic
+          ? "يرجى الموافقة على سياسة الخصوصية قبل الإرسال."
+          : "Please agree to the privacy policy before sending.",
+      });
+      return;
+    }
+
+    try {
+      setSubmittingRequest(true);
+
+      await addDoc(collection(db, "serviceRequests"), {
+        serviceId: service?.id || null,
+        serviceSlug: getServiceSlug(service) || slug || "",
+        serviceTitle: getServiceTitle(service, language),
+        language,
+        ...requestForm,
+        createdAt: serverTimestamp(),
+      });
+
+      setRequestForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        company: "",
+        servicePackage: "",
+        budget: "",
+        timeline: "",
+        platforms: "",
+        goals: "",
+        message: "",
+        privacy: false,
+      });
+
+      setRequestMessage({ type: "success", text: text.requestSuccess });
+    } catch (error) {
+      console.error("Service request submit failed:", error);
+      setRequestMessage({ type: "error", text: text.requestError });
+    } finally {
+      setSubmittingRequest(false);
+    }
   };
 
   const benefits = useMemo(() => {
-    if (!Array.isArray(service?.benefits)) return [];
-
-    return service.benefits.map((benefit, index) => {
+    return normalizeList(service?.benefits).map((benefit, index) => {
       const localizedBenefit = getLocalizedObject(benefit, language);
 
       return {
@@ -341,44 +453,85 @@ const ServiceDetail = () => {
     });
   }, [service, language]);
 
-  const guides = useMemo(() => {
-    const source = Array.isArray(service?.guides) ? service.guides : [];
+  const resources = useMemo(() => {
+    const source = normalizeList(service?.resources).length
+      ? normalizeList(service?.resources)
+      : normalizeList(service?.guides);
 
-    return source.map((guide, index) => {
-      const localizedGuide = getLocalizedObject(guide, language);
+    return source.map((resource, index) => {
+      const localizedResource = getLocalizedObject(resource, language);
 
       return {
-        id: guide.id || index,
-        image:
-          localizedGuide.imageUrl ||
-          guide.imageUrl ||
-          FALLBACK_GUIDE_IMAGES[index % FALLBACK_GUIDE_IMAGES.length],
+        id: resource.id || index,
+        image: getItemImage(resource, localizedResource),
+        type: localizedResource.type || "",
         date:
-          localizedGuide.date ||
-          localizedGuide.dateText ||
-          localizedGuide.publishedText ||
+          localizedResource.date ||
+          localizedResource.dateText ||
+          localizedResource.publishedText ||
           "",
-        title: localizedGuide.title || "",
-        description: localizedGuide.description || "",
+        title: localizedResource.title || "",
+        description: localizedResource.description || "",
+        fileType: localizedResource.fileType || "",
+        buttonText: localizedResource.buttonText || "",
+        url: localizedResource.url || localizedResource.fileUrl || resource.url || resource.fileUrl || "",
       };
     });
   }, [service, language]);
 
-  const templates = useMemo(() => {
-    const source = Array.isArray(service?.templates) ? service.templates : [];
+  const deliverables = useMemo(() => {
+    const source = normalizeList(service?.deliverables).length
+      ? normalizeList(service?.deliverables)
+      : normalizeList(service?.templates);
 
-    return source.map((template, index) => {
-      const localizedTemplate = getLocalizedObject(template, language);
+    return source.map((item, index) => {
+      const localizedItem = getLocalizedObject(item, language);
 
       return {
-        id: template.id || index,
-        image:
-          localizedTemplate.imageUrl ||
-          template.imageUrl ||
-          FALLBACK_TEMPLATE_IMAGES[index % FALLBACK_TEMPLATE_IMAGES.length],
-        title: localizedTemplate.title || "",
-        description: localizedTemplate.description || "",
-        type: localizedTemplate.type || localizedTemplate.fileType || "",
+        id: item.id || index,
+        image: getItemImage(item, localizedItem),
+        title: localizedItem.title || "",
+        description: localizedItem.description || "",
+        type: localizedItem.type || localizedItem.fileType || "",
+      };
+    });
+  }, [service, language]);
+
+  const processSteps = useMemo(() => {
+    return normalizeList(service?.processSteps).map((step, index) => {
+      const localizedStep = getLocalizedObject(step, language);
+
+      return {
+        id: step.id || index,
+        label: localizedStep.label || `${isArabic ? "الخطوة" : "Step"} ${index + 1}`,
+        title: localizedStep.title || "",
+        description: localizedStep.description || "",
+      };
+    });
+  }, [service, language, isArabic]);
+
+  const pricingPlans = useMemo(() => {
+    return normalizeList(service?.pricingPlans).map((plan, index) => {
+      const localizedPlan = getLocalizedObject(plan, language);
+
+      return {
+        id: plan.id || index,
+        title: localizedPlan.title || "",
+        price: localizedPlan.price || "",
+        description: localizedPlan.description || "",
+        features: getFeatures(localizedPlan.features),
+      };
+    });
+  }, [service, language]);
+
+  const faqs = useMemo(() => {
+    return normalizeList(service?.faqs).map((faq, index) => {
+      const localizedFaq = getLocalizedObject(faq, language);
+
+      return {
+        id: faq.id || index,
+        question: localizedFaq.question || "",
+        answer: localizedFaq.answer || "",
       };
     });
   }, [service, language]);
@@ -488,37 +641,37 @@ const ServiceDetail = () => {
     service.imageUrl ||
     managementHeroBg;
 
-  const benefitsTitle = localizedService.benefitsTitle || text.benefitsTitle;
-
-  const guidesTitle = localizedService.guidesTitle || text.guidesTitle;
-  const guidesDescription =
-    localizedService.guidesDescription || text.guidesDescription;
-
-  const templatesTitle = localizedService.templatesTitle || text.templatesTitle;
-  const templatesDescription =
-    localizedService.templatesDescription || text.templatesDescription;
-
-  const requestLabel = localizedService.requestLabel || text.requestLabel;
-  const requestTitle = localizedService.requestTitle || text.requestTitle;
-  const requestDescription =
-    localizedService.requestDescription || text.requestDescription;
-
-  const testimonialLabel =
-    localizedService.testimonialsLabel || text.testimonialsLabel;
-  const testimonialTitle =
-    localizedService.testimonialsTitle || text.testimonialsTitle;
-  const testimonialDescription =
-    localizedService.testimonialsDescription || text.testimonialsDescription;
+  const overviewImage =
+    service.overviewImageUrl ||
+    localizedService.overviewImageUrl ||
+    service.imageUrl ||
+    "";
 
   const requestImage =
     service.requestImageUrl ||
     localizedService.requestImageUrl ||
-    requestFeaturedImage;
+    "";
 
   const videoReviewImage =
     service.videoReviewImageUrl ||
     localizedService.videoReviewImageUrl ||
     reviewVideo;
+
+  const hasOverview = Boolean(
+    localizedService.overviewTitle ||
+      localizedService.overviewDescription ||
+      localizedService.overviewLabel ||
+      overviewImage
+  );
+
+  const showPricing = service.showPricing !== false && pricingPlans.length > 0;
+  const showResources = service.showResources !== false && resources.length > 0;
+  const showFaqs = service.showFaqs !== false && faqs.length > 0;
+
+  const requestPackageOptions = pricingPlans
+    .map((plan) => plan.title)
+    .filter(Boolean);
+  const showPackageSelect = requestPackageOptions.length > 0;
 
   return (
     <main className="service-detail-page" dir={isArabic ? "rtl" : "ltr"}>
@@ -555,11 +708,17 @@ const ServiceDetail = () => {
             style={{ backgroundImage: `url(${heroBackground})` }}
           >
             <div className="service-detail-hero__content">
+              {localizedService.heroEyebrow && (
+                <span className="service-detail-hero__eyebrow">
+                  {localizedService.heroEyebrow}
+                </span>
+              )}
+
               <h1>{serviceTitle}</h1>
 
               <p>{serviceDescription}</p>
 
-              <a href="#service-request" className="service-detail-hero__btn">
+              <a href="#service-request" className="service-detail-hero__btn" onClick={scrollToRequestForm}>
                 {heroButtonText}
               </a>
             </div>
@@ -567,10 +726,44 @@ const ServiceDetail = () => {
         </div>
       </section>
 
+      {hasOverview && (
+        <section className="service-overview-section">
+          <div className="service-detail-container">
+            <div className={`service-overview-card ${!overviewImage ? "service-overview-card--text-only" : ""}`}>
+              <div className="service-overview-content">
+                <p className="service-section-kicker">
+                  {localizedService.overviewLabel || text.overviewLabel}
+                </p>
+
+                <h2>{localizedService.overviewTitle || text.overviewTitle}</h2>
+
+                {localizedService.overviewDescription && (
+                  <p className="service-overview-description">
+                    {localizedService.overviewDescription}
+                  </p>
+                )}
+              </div>
+
+              {overviewImage && (
+                <div className="service-overview-image-wrap">
+                  <img src={overviewImage} alt={localizedService.overviewTitle || serviceTitle} />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {benefits.length > 0 && (
         <section className="service-benefits-section">
           <div className="service-detail-container">
-            <h2>{benefitsTitle}</h2>
+            <div className="service-section-header service-section-header--compact">
+              <h2>{localizedService.benefitsTitle || text.benefitsTitle}</h2>
+
+              {localizedService.benefitsDescription && (
+                <p>{localizedService.benefitsDescription}</p>
+              )}
+            </div>
 
             <div className="service-benefits-grid">
               {benefits.map((item, index) => (
@@ -593,74 +786,42 @@ const ServiceDetail = () => {
         </section>
       )}
 
-      {guides.length > 0 && (
-        <section className="service-guides-section">
-          <div className="service-detail-container">
-            <div className="service-section-header">
-              <h2>{guidesTitle}</h2>
-
-              <p>{guidesDescription}</p>
-            </div>
-
-            <div className="service-guides-panel">
-              <div className="service-guides-grid">
-                {guides.map((guide, index) => (
-                  <article
-                    className="service-guide-card"
-                    style={{ "--animation-order": index }}
-                    key={guide.id}
-                  >
-                    <img
-                      src={guide.image}
-                      alt={guide.title}
-                      className="service-guide-card__image"
-                    />
-
-                    {guide.date && (
-                      <span className="service-guide-card__date">
-                        {guide.date}
-                      </span>
-                    )}
-
-                    <h3>{guide.title}</h3>
-
-                    <p>{guide.description}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {templates.length > 0 && (
+      {deliverables.length > 0 && (
         <section className="service-templates-section">
           <div className="service-detail-container">
             <div className="service-section-header">
-              <h2>{templatesTitle}</h2>
+              <h2>{localizedService.deliverablesTitle || localizedService.templatesTitle || text.deliverablesTitle}</h2>
 
-              <p>{templatesDescription}</p>
+              <p>
+                {localizedService.deliverablesDescription ||
+                  localizedService.templatesDescription ||
+                  text.templatesDescription}
+              </p>
             </div>
 
             <div className="service-templates-panel">
-              <div className="service-templates-grid">
-                {templates.map((template, index) => (
+              <div className={`service-templates-grid service-card-grid--count-${Math.min(deliverables.length, 3)}`}>
+                {deliverables.map((item, index) => (
                   <article
                     className="service-template-card"
                     style={{ "--animation-order": index }}
-                    key={template.id}
+                    key={item.id}
                   >
-                    <img
-                      src={template.image}
-                      alt={template.title}
-                      className="service-template-card__image"
-                    />
+                    {item.image && (
+                      <div className="service-template-card__image-wrap">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="service-template-card__image"
+                        />
+                      </div>
+                    )}
 
-                    <h3>{template.title}</h3>
+                    <h3>{item.title}</h3>
 
-                    <p>{template.description}</p>
+                    <p>{item.description}</p>
 
-                    {template.type && <span>{template.type}</span>}
+                    {item.type && <span>{item.type}</span>}
                   </article>
                 ))}
               </div>
@@ -669,24 +830,147 @@ const ServiceDetail = () => {
         </section>
       )}
 
-      <section className="service-request-section" id="service-request">
+      {processSteps.length > 0 && (
+        <section className="service-process-section">
+          <div className="service-detail-container">
+            <div className="service-section-header service-section-header--center">
+              <h2>{localizedService.processTitle || text.processTitle}</h2>
+
+              {localizedService.processDescription && (
+                <p>{localizedService.processDescription}</p>
+              )}
+            </div>
+
+            <div className="service-process-grid">
+              {processSteps.map((step, index) => (
+                <article
+                  className="service-process-card"
+                  style={{ "--animation-order": index }}
+                  key={step.id}
+                >
+                  <span>{step.label}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {showPricing && (
+        <section className="service-pricing-section">
+          <div className="service-detail-container">
+            <div className="service-section-header service-section-header--center">
+              <h2>{localizedService.pricingTitle || text.pricingTitle}</h2>
+
+              {localizedService.pricingDescription && (
+                <p>{localizedService.pricingDescription}</p>
+              )}
+            </div>
+
+            <div className="service-pricing-grid">
+              {pricingPlans.map((plan, index) => (
+                <article
+                  className="service-pricing-card"
+                  style={{ "--animation-order": index }}
+                  key={plan.id}
+                >
+                  <h3>{plan.title}</h3>
+                  <strong>{plan.price}</strong>
+                  <p>{plan.description}</p>
+
+                  {plan.features.length > 0 && (
+                    <ul>
+                      {plan.features.map((feature) => (
+                        <li key={feature}>{feature}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <a href="#service-request" onClick={scrollToRequestForm}>
+                    {localizedService.requestButtonText || text.sendRequest}
+                  </a>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {showResources && (
+        <section className="service-guides-section">
+          <div className="service-detail-container">
+            <div className="service-section-header">
+              <h2>{localizedService.resourcesTitle || localizedService.guidesTitle || text.resourcesTitle}</h2>
+
+              <p>
+                {localizedService.resourcesDescription ||
+                  localizedService.guidesDescription ||
+                  text.resourcesDescription}
+              </p>
+            </div>
+
+            <div className="service-guides-panel">
+              <div className={`service-guides-grid service-card-grid--count-${Math.min(resources.length, 3)}`}>
+                {resources.map((resource, index) => (
+                  <article
+                    className="service-guide-card"
+                    style={{ "--animation-order": index }}
+                    key={resource.id}
+                  >
+                    {resource.image && (
+                      <img
+                        src={resource.image}
+                        alt={resource.title}
+                        className="service-guide-card__image"
+                      />
+                    )}
+
+                    <div className="service-guide-card__meta">
+                      {resource.type && <span>{resource.type}</span>}
+                      {resource.date && <span>{resource.date}</span>}
+                    </div>
+
+                    <h3>{resource.title}</h3>
+
+                    <p>{resource.description}</p>
+
+                    {resource.fileType && (
+                      <small>{resource.fileType}</small>
+                    )}
+
+                    {resource.url && (
+                      <a href={resource.url} className="service-download-btn" target="_blank" rel="noreferrer">
+                        {resource.buttonText || (isArabic ? "تحميل المورد" : "Download resource")}
+                      </a>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="service-request-section" id="service-request" ref={serviceRequestRef}>
         <div className="service-detail-container">
           <div className="service-request-card">
             <div className="service-request-left">
-              <p>{requestLabel}</p>
+              <p>{localizedService.requestLabel || text.requestLabel}</p>
 
-              <h2>{requestTitle}</h2>
+              <h2>{localizedService.requestTitle || text.requestTitle}</h2>
 
-              <span>{requestDescription}</span>
+              <span>{localizedService.requestDescription || text.requestDescription}</span>
 
-              <img src={requestImage} alt={requestTitle} />
+              {requestImage && (
+                <img src={requestImage} alt={localizedService.requestTitle || text.requestTitle} />
+              )}
             </div>
 
             <form className="service-request-form" onSubmit={handleRequestSubmit}>
               <div className="service-request-form__grid">
-                <div className="service-request-form__group">
-                  <label htmlFor="firstName">{text.firstName}</label>
-
+                <FormGroup label={text.firstName} htmlFor="firstName">
                   <input
                     id="firstName"
                     name="firstName"
@@ -694,12 +978,11 @@ const ServiceDetail = () => {
                     placeholder={text.firstNamePlaceholder}
                     value={requestForm.firstName}
                     onChange={handleRequestChange}
+                    required
                   />
-                </div>
+                </FormGroup>
 
-                <div className="service-request-form__group">
-                  <label htmlFor="lastName">{text.lastName}</label>
-
+                <FormGroup label={text.lastName} htmlFor="lastName">
                   <input
                     id="lastName"
                     name="lastName"
@@ -708,11 +991,9 @@ const ServiceDetail = () => {
                     value={requestForm.lastName}
                     onChange={handleRequestChange}
                   />
-                </div>
+                </FormGroup>
 
-                <div className="service-request-form__group service-request-form__group--full">
-                  <label htmlFor="email">{text.email}</label>
-
+                <FormGroup label={text.email} htmlFor="email">
                   <input
                     id="email"
                     name="email"
@@ -720,12 +1001,49 @@ const ServiceDetail = () => {
                     placeholder={text.emailPlaceholder}
                     value={requestForm.email}
                     onChange={handleRequestChange}
+                    required
                   />
-                </div>
+                </FormGroup>
 
-                <div className="service-request-form__group service-request-form__group--full">
-                  <label htmlFor="message">{text.message}</label>
+                <FormGroup label={text.phone} htmlFor="phone">
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder={text.phonePlaceholder}
+                    value={requestForm.phone}
+                    onChange={handleRequestChange}
+                  />
+                </FormGroup>
 
+                <FormGroup label={text.company} htmlFor="company" full>
+                  <input
+                    id="company"
+                    name="company"
+                    type="text"
+                    placeholder={text.companyPlaceholder}
+                    value={requestForm.company}
+                    onChange={handleRequestChange}
+                  />
+                </FormGroup>
+
+                {showPackageSelect && (
+                  <FormGroup label={text.servicePackage} htmlFor="servicePackage" full>
+                    <select
+                      id="servicePackage"
+                      name="servicePackage"
+                      value={requestForm.servicePackage}
+                      onChange={handleRequestChange}
+                    >
+                      <option value="">{text.packagePlaceholder}</option>
+                      {requestPackageOptions.map((option) => (
+                        <option value={option} key={option}>{option}</option>
+                      ))}
+                    </select>
+                  </FormGroup>
+                )}
+
+                <FormGroup label={text.message} htmlFor="message" full>
                   <textarea
                     id="message"
                     name="message"
@@ -733,7 +1051,7 @@ const ServiceDetail = () => {
                     value={requestForm.message}
                     onChange={handleRequestChange}
                   ></textarea>
-                </div>
+                </FormGroup>
               </div>
 
               <label className="service-request-policy">
@@ -749,24 +1067,57 @@ const ServiceDetail = () => {
                 </span>
               </label>
 
-              <button type="submit" className="service-request-submit">
-                {localizedService.requestButtonText || text.sendRequest}
+              {requestMessage.text && (
+                <div className={`service-request-alert service-request-alert--${requestMessage.type}`}>
+                  {requestMessage.text}
+                </div>
+              )}
+
+              <button type="submit" className="service-request-submit" disabled={submittingRequest}>
+                {submittingRequest
+                  ? isArabic
+                    ? "جاري الإرسال..."
+                    : "Sending..."
+                  : localizedService.requestButtonText || text.sendRequest}
               </button>
             </form>
           </div>
         </div>
       </section>
 
+      {showFaqs && (
+        <section className="service-faq-section">
+          <div className="service-detail-container">
+            <div className="service-section-header service-section-header--center">
+              <h2>{localizedService.faqsTitle || text.faqsTitle}</h2>
+
+              {localizedService.faqsDescription && (
+                <p>{localizedService.faqsDescription}</p>
+              )}
+            </div>
+
+            <div className="service-faq-list">
+              {faqs.map((faq, index) => (
+                <details className="service-faq-item" key={faq.id} open={index === 0}>
+                  <summary>{faq.question}</summary>
+                  <p>{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {reviews.length > 0 && (
         <section className="service-testimonials-section">
           <div className="service-detail-container">
             <div className="service-testimonials-card">
               <div className="service-testimonials-left">
-                <p>{testimonialLabel}</p>
+                <p>{localizedService.testimonialsLabel || text.testimonialsLabel}</p>
 
-                <h2>{testimonialTitle}</h2>
+                <h2>{localizedService.testimonialsTitle || text.testimonialsTitle}</h2>
 
-                <span>{testimonialDescription}</span>
+                <span>{localizedService.testimonialsDescription || text.testimonialsDescription}</span>
 
                 <button type="button">
                   <img src={leaveReviewIcon} alt="" />
@@ -905,5 +1256,14 @@ const ServiceDetail = () => {
     </main>
   );
 };
+
+function FormGroup({ label, htmlFor, full = false, children }) {
+  return (
+    <div className={`service-request-form__group ${full ? "service-request-form__group--full" : ""}`}>
+      <label htmlFor={htmlFor}>{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default ServiceDetail;
