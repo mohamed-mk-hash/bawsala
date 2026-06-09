@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import logo from "../assets/bawsala-logo.png";
+import logo from "../assets/bawsala-logo_footer.png";
 
-import facebookIcon from "../assets/facebook.png";
-import instagramIcon from "../assets/instagram.png";
-import linkedinIcon from "../assets/linkedin.png";
-import whatsappIcon from "../assets/whatsapp.png";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaWhatsapp } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import xIcon from "../assets/x.png";
 
 const getInitialLanguage = () => {
@@ -129,51 +127,51 @@ const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
             <h4 className="footer__socialTitle">{text.socialTitle}</h4>
 
             <div className="footer__socials">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-              >
-                <img src={facebookIcon} alt="" />
-              </a>
+  <a
+    href="https://facebook.com"
+    target="_blank"
+    rel="noreferrer"
+    aria-label="Facebook"
+  >
+    <FaFacebookF />
+  </a>
 
-              <a
-  href={whatsappLink}
-  target="_blank"
-  rel="noreferrer"
-  aria-label="WhatsApp"
->
-  <img src={whatsappIcon} alt="" />
-</a>
+  <a
+    href={whatsappLink}
+    target="_blank"
+    rel="noreferrer"
+    aria-label="WhatsApp"
+  >
+    <FaWhatsapp />
+  </a>
 
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-              >
-                <img src={instagramIcon} alt="" />
-              </a>
+  <a
+    href="https://instagram.com"
+    target="_blank"
+    rel="noreferrer"
+    aria-label="Instagram"
+  >
+    <FaInstagram />
+  </a>
 
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="LinkedIn"
-              >
-                <img src={linkedinIcon} alt="" />
-              </a>
+  <a
+    href="https://linkedin.com"
+    target="_blank"
+    rel="noreferrer"
+    aria-label="LinkedIn"
+  >
+    <FaLinkedinIn />
+  </a>
 
-              <a
-                href="https://x.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="X"
-              >
-                <img src={xIcon} alt="" />
-              </a>
-            </div>
+  <a
+    href="https://x.com"
+    target="_blank"
+    rel="noreferrer"
+    aria-label="X"
+  >
+    <FaXTwitter />
+  </a>
+</div>
           </div>
         </div>
 

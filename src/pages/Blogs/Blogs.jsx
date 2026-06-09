@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -397,36 +397,47 @@ export default function Blogs() {
                 : "No matching articles found."}
             </div>
           ) : (
-            <div className="blogsGrid__grid">
-              {firstThreeBlogs.map((blog) => (
+            <div
+              className="blogsGrid__grid blogsGrid__grid--animated"
+              key={`${activeCategoryId}-${sort}-${searchValue}`}
+            >
+              {firstThreeBlogs.map((blog, index) => (
                 <PostCard
                   key={blog.id}
                   blog={blog}
                   categories={categories}
                   language={language}
                   isArabic={isArabic}
+                  animationIndex={index}
                 />
               ))}
 
-              <NewsletterCard isArabic={isArabic} />
+              <NewsletterCard
+                isArabic={isArabic}
+                animationIndex={firstThreeBlogs.length}
+              />
 
-              {middleBlogs.map((blog) => (
+              {middleBlogs.map((blog, index) => (
                 <PostCard
                   key={blog.id}
                   blog={blog}
                   categories={categories}
                   language={language}
                   isArabic={isArabic}
+                  animationIndex={firstThreeBlogs.length + 1 + index}
                 />
               ))}
 
-              {lastBlogs.map((blog) => (
+              {lastBlogs.map((blog, index) => (
                 <PostCard
                   key={blog.id}
                   blog={blog}
                   categories={categories}
                   language={language}
                   isArabic={isArabic}
+                  animationIndex={
+                    firstThreeBlogs.length + 1 + middleBlogs.length + index
+                  }
                 />
               ))}
             </div>
@@ -556,7 +567,7 @@ export default function Blogs() {
   );
 }
 
-function PostCard({ blog, categories, language, isArabic }) {
+function PostCard({ blog, categories, language, isArabic, animationIndex = 0 }) {
   const title = getBlogTitle(blog, language);
   const excerpt = getBlogExcerpt(blog, language);
   const author = getBlogAuthor(blog, language);
@@ -569,7 +580,11 @@ function PostCard({ blog, categories, language, isArabic }) {
   const url = getBlogUrl(blog);
 
   return (
-    <article className="postCard" lang={isArabic ? "ar" : "en"}>
+    <article
+      className="postCard"
+      lang={isArabic ? "ar" : "en"}
+      style={{ "--card-index": animationIndex }}
+    >
       <Link className="postCard__media" to={`/blog/${getBlogSlug(blog)}`}>
         {image && <img src={image} alt={imageAlt} loading="lazy" />}
       </Link>
@@ -610,9 +625,12 @@ function PostCard({ blog, categories, language, isArabic }) {
   );
 }
 
-function NewsletterCard({ isArabic }) {
+function NewsletterCard({ isArabic, animationIndex = 0 }) {
   return (
-    <aside className="newsletterCard">
+    <aside
+      className="newsletterCard"
+      style={{ "--card-index": animationIndex }}
+    >
       <div className="newsletterCard__icon" aria-hidden="true">
         <img
           src={SendIcon}

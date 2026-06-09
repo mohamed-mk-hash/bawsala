@@ -22,11 +22,12 @@ import ServiceDetail from "./pages/serviceDetails/ServiceDetail";
 import Product from "./pages/Products/Product";
 import ProductDetails from "./pages/ProductDetails/ProductDetails";
 import BlogDetail from "./pages/BlogDetail/BlogDetail";
+import ScrollToTop from "./Components/ScrollToTop";
 export default function App() {
   return (
     <div>
       <Header />
-    
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />

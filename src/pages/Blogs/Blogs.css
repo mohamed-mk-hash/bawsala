@@ -230,6 +230,75 @@
   gap: 34px;
 }
 
+
+.blogsGrid__grid--animated {
+  animation: blogsGridFadeIn 260ms ease both;
+}
+
+.blogsGrid__grid--animated .postCard,
+.blogsGrid__grid--animated .newsletterCard {
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+  animation: blogCardEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 70ms);
+  will-change: opacity, transform;
+}
+
+@keyframes blogsGridFadeIn {
+  from {
+    opacity: 0.65;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blogCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.blogsGrid__tab.is-active {
+  animation: blogTabPop 220ms ease both;
+}
+
+@keyframes blogTabPop {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blogsGrid__grid--animated,
+  .blogsGrid__grid--animated .postCard,
+  .blogsGrid__grid--animated .newsletterCard,
+  .blogsGrid__tab.is-active {
+    animation: none;
+  }
+
+  .blogsGrid__grid--animated .postCard,
+  .blogsGrid__grid--animated .newsletterCard {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* =========================
    POST CARD
 ========================= */

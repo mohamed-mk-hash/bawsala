@@ -3,6 +3,10 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root{
   --primary: #2195F4;
   --primary-hover: #6B46C1;
@@ -2001,7 +2005,7 @@ body {
 }
 
 .footer__logo {
-  width: 42px;
+  width: 60px;
   height: auto;
   display: block;
   margin-bottom: 18px;
@@ -2069,27 +2073,31 @@ body {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.86);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: transform 180ms ease, background 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.footer__socials a svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .footer__socials a:hover {
   transform: translateY(-3px);
-  background: rgba(33, 149, 244, 0.16);
-  border-color: rgba(33, 149, 244, 0.5);
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.36);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
 }
 
-.footer__socials img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  display: block;
-}
+
 
 .footer__divider {
   height: 1px;

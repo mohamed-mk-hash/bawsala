@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
@@ -19,6 +20,16 @@ const chargily = new ChargilyClient({
 });
 
 const app = express();
+
+const contactEmailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: process.env.SMTP_SECURE === "true",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 app.use(
   cors({
@@ -397,6 +408,109 @@ app.post("/api/course-module-video", async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: "Could not load course video.",
+    });
+  }
+});
+
+/* =========================
+   Contact form email
+========================= */
+
+app.post("/api/contact", async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      countryCode,
+      phone,
+      message,
+      acceptedPrivacy,
+    } = req.body;
+
+    if (!firstName || !lastName || !email || !message) {
+      return res.status(400).json({
+        ok: false,
+        message: "Please fill all required fields.",
+      });
+    }
+
+    if (!acceptedPrivacy) {
+      return res.status(400).json({
+        ok: false,
+        message: "Privacy policy must be accepted.",
+      });
+    }
+
+    if (
+      !process.env.SMTP_HOST ||
+      !process.env.SMTP_USER ||
+      !process.env.SMTP_PASS ||
+      !process.env.CONTACT_RECEIVER_EMAIL
+    ) {
+      return res.status(500).json({
+        ok: false,
+        message: "Contact email configuration is missing in server .env file.",
+      });
+    }
+
+    const safeFirstName = String(firstName).trim();
+    const safeLastName = String(lastName).trim();
+    const safeEmail = String(email).trim();
+    const safeCountryCode = String(countryCode || "").trim();
+    const safePhone = String(phone || "").trim();
+    const safeMessage = String(message).trim();
+
+    const emailInfo = await contactEmailTransporter.sendMail({
+      from: `"Bawsala Contact Form" <${process.env.SMTP_USER}>`,
+      to: process.env.CONTACT_RECEIVER_EMAIL,
+      replyTo: safeEmail,
+      subject: `New contact message from ${safeFirstName} ${safeLastName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>New Contact Form Message</h2>
+
+          <p><strong>First name:</strong> ${safeFirstName}</p>
+          <p><strong>Last name:</strong> ${safeLastName}</p>
+          <p><strong>Email:</strong> ${safeEmail}</p>
+          <p><strong>Phone:</strong> ${safeCountryCode} ${safePhone}</p>
+
+          <hr />
+
+          <p><strong>Message:</strong></p>
+          <p>${safeMessage.replace(/\n/g, "<br />")}</p>
+        </div>
+      `,
+      text: `
+New Contact Form Message
+
+First name: ${safeFirstName}
+Last name: ${safeLastName}
+Email: ${safeEmail}
+Phone: ${safeCountryCode} ${safePhone}
+
+Message:
+${safeMessage}
+      `,
+    });
+
+    console.log("Contact email sent:", {
+  messageId: emailInfo.messageId,
+  accepted: emailInfo.accepted,
+  rejected: emailInfo.rejected,
+  response: emailInfo.response,
+});
+
+    return res.json({
+      ok: true,
+      message: "Contact message sent successfully.",
+    });
+  } catch (error) {
+    console.error("Contact form email error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Could not send contact message.",
     });
   }
 });
