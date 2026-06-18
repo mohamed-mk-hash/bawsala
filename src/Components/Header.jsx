@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
 
@@ -41,6 +41,23 @@ const getInitialLanguage = () => {
 
 const getLanguageCode = (language) => {
   return language === "Arabic" ? "ar" : "en";
+};
+
+const getSavedProfile = (uid) => {
+  try {
+    return JSON.parse(localStorage.getItem(`user_profile_${uid}`) || "{}");
+  } catch (error) {
+    console.warn("Could not read saved profile:", error);
+    return {};
+  }
+};
+
+const saveProfileCache = (uid, profileData) => {
+  try {
+    localStorage.setItem(`user_profile_${uid}`, JSON.stringify(profileData));
+  } catch (error) {
+    console.warn("Could not save profile cache:", error);
+  }
 };
 
 const NAV_LABELS = {
@@ -128,9 +145,7 @@ export default function Header() {
       return;
     }
 
-    const savedProfile = JSON.parse(
-      localStorage.getItem(`user_profile_${user.uid}`) || "{}"
-    );
+    const savedProfile = getSavedProfile(user.uid);
 
     setLocalProfile({
       displayName: savedProfile.displayName || user.displayName || "",
@@ -168,6 +183,50 @@ export default function Header() {
 
   useEffect(() => {
     if (!currentUser?.uid) {
+      return undefined;
+    }
+
+    const userRef = doc(db, "users", currentUser.uid);
+
+    const unsubscribe = onSnapshot(
+      userRef,
+      (snapshot) => {
+        const firestoreProfile = snapshot.exists() ? snapshot.data() : {};
+        const savedProfile = getSavedProfile(currentUser.uid);
+
+        const nextProfile = {
+          displayName:
+            firestoreProfile.displayName ||
+            firestoreProfile.fullName ||
+            savedProfile.displayName ||
+            currentUser.displayName ||
+            "",
+          photoURL:
+            firestoreProfile.photoURL ||
+            savedProfile.photoURL ||
+            currentUser.photoURL ||
+            "",
+        };
+
+        setLocalProfile(nextProfile);
+
+        saveProfileCache(currentUser.uid, {
+          ...savedProfile,
+          ...nextProfile,
+          email: firestoreProfile.email || currentUser.email || savedProfile.email || "",
+        });
+      },
+      (error) => {
+        console.error("Profile listener error:", error);
+        loadLocalProfile(currentUser);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) {
       setCartCount(0);
       return undefined;
     }
@@ -189,8 +248,39 @@ export default function Header() {
   }, [currentUser?.uid]);
 
   useEffect(() => {
-    const handleProfileUpdated = () => {
-      loadLocalProfile(auth.currentUser);
+    const handleProfileUpdated = (event) => {
+      const updatedProfile = event.detail || {};
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      if (updatedProfile.uid && updatedProfile.uid !== user.uid) {
+        return;
+      }
+
+      const savedProfile = getSavedProfile(user.uid);
+
+      const nextProfile = {
+        displayName:
+          updatedProfile.displayName ||
+          updatedProfile.fullName ||
+          savedProfile.displayName ||
+          user.displayName ||
+          "",
+        photoURL:
+          updatedProfile.photoURL ||
+          savedProfile.photoURL ||
+          user.photoURL ||
+          "",
+      };
+
+      setLocalProfile(nextProfile);
+
+      saveProfileCache(user.uid, {
+        ...savedProfile,
+        ...nextProfile,
+        email: updatedProfile.email || user.email || savedProfile.email || "",
+      });
     };
 
     window.addEventListener("userProfileUpdated", handleProfileUpdated);
@@ -315,7 +405,11 @@ export default function Header() {
         </div>
 
         <div className="right">
-          <NavLink className="cartBtn desktopCartBtn" to="/cart" aria-label={labels.cart}>
+          <NavLink
+            className="cartBtn desktopCartBtn"
+            to="/cart"
+            aria-label={labels.cart}
+          >
             <img className="cartIcon" src={cartIcon} alt={labels.cart} />
             {cartCount > 0 && <span className="cartBadge">{cartCount}</span>}
           </NavLink>
@@ -373,6 +467,9 @@ export default function Header() {
                   className="profileImage"
                   src={profileImage}
                   alt={profileName}
+                  onError={(event) => {
+                    event.currentTarget.src = defaultProfileImage;
+                  }}
                 />
               </button>
 
@@ -437,18 +534,32 @@ export default function Header() {
 
             {!currentUser ? (
               <div className="mobileAuthActions">
-                <NavLink className="login mobileLogin" to="/login" onClick={closeMenus}>
+                <NavLink
+                  className="login mobileLogin"
+                  to="/login"
+                  onClick={closeMenus}
+                >
                   {labels.login}
                 </NavLink>
 
-                <NavLink className="signup mobileSignup" to="/signin" onClick={closeMenus}>
+                <NavLink
+                  className="signup mobileSignup"
+                  to="/signin"
+                  onClick={closeMenus}
+                >
                   {labels.signup}
                 </NavLink>
               </div>
             ) : (
               <div className="mobileProfilePanel">
                 <div className="mobileProfileInfo">
-                  <img src={profileImage} alt={profileName} />
+                  <img
+                    src={profileImage}
+                    alt={profileName}
+                    onError={(event) => {
+                      event.currentTarget.src = defaultProfileImage;
+                    }}
+                  />
 
                   <div>
                     <strong>{profileName}</strong>

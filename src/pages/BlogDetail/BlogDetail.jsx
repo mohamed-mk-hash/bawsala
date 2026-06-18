@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   collection,
@@ -15,10 +15,11 @@ import "./BlogDetail.css";
 import BlogHeroImage from "../../assets/blog_featured_image.png";
 import BlogContentImage from "../../assets/blog_featured_image_2.png";
 
-import XShareIcon from "../../assets/blog_x_share.png";
-import FacebookShareIcon from "../../assets/blog_facebook-share.png";
-import LinkedinShareIcon from "../../assets/blog_linkedin_share.png";
-import CopyLinkIcon from "../../assets/blog_copy_link.png";
+import InstagramShareIcon from "../../assets/instagram.png";
+import XShareIcon from "../../assets/x.png";
+import WhatsappShareIcon from "../../assets/whatsapp.png";
+import LinkedinShareIcon from "../../assets/linkedin.png";
+import FacebookShareIcon from "../../assets/facebook.png";
 import SendIcon from "../../assets/send-01.png";
 
 import PostImage from "../../assets/insights.jpg";
@@ -91,24 +92,6 @@ const getBlogSubtitle = (blog, language) => {
   return localizedBlog.subtitle || localizedBlog.seoDescription || "";
 };
 
-const getBlogAuthor = (blog, language) => {
-  const localizedBlog = getLocalizedObject(blog, language);
-
-  return localizedBlog.authorName || "";
-};
-
-const getBlogAuthorLabel = (blog, language, isArabic) => {
-  const localizedBlog = getLocalizedObject(blog, language);
-
-  return localizedBlog.authorLabel || (isArabic ? "كتبه" : "Written by");
-};
-
-const getBlogPublishedLabel = (blog, language, isArabic) => {
-  const localizedBlog = getLocalizedObject(blog, language);
-
-  return localizedBlog.publishedLabel || (isArabic ? "نشر في" : "Published on");
-};
-
 const getBlogPublishedText = (blog, language) => {
   const localizedBlog = getLocalizedObject(blog, language);
 
@@ -120,10 +103,14 @@ const getBlogPublishedText = (blog, language) => {
   );
 };
 
-const getBlogReadTime = (blog, language) => {
+const getBlogReadTime = (blog, language, isArabic) => {
   const localizedBlog = getLocalizedObject(blog, language);
 
-  return localizedBlog.readTimeText || localizedBlog.metaReadTimeText || "";
+  return (
+    localizedBlog.readTimeText ||
+    localizedBlog.metaReadTimeText ||
+    (isArabic ? "دقيقتان قراءة" : "2 minute read")
+  );
 };
 
 const getBlogCategoryName = (blog, categories, language) => {
@@ -184,17 +171,6 @@ const getBlogLatestExcerpt = (blog, language) => {
   return localizedBlog.subtitle || localizedBlog.seoDescription || "";
 };
 
-const getAuthorAvatar = (blog, language) => {
-  const localizedBlog = getLocalizedObject(blog, language);
-
-  return (
-    localizedBlog.authorAvatarUrl ||
-    blog.authorAvatarUrl ||
-    blog.authorImageUrl ||
-    ""
-  );
-};
-
 function LatestBlogCard({
   blog,
   categories,
@@ -207,7 +183,7 @@ function LatestBlogCard({
   const category = getBlogCategoryName(blog, categories, language);
   const image = getBlogHeroImage(blog, language);
   const publishedText = getBlogPublishedText(blog, language);
-  const readTime = getBlogReadTime(blog, language);
+  const readTime = getBlogReadTime(blog, language, isArabic);
 
   return (
     <article
@@ -250,9 +226,6 @@ const BlogDetail = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [readingProgress, setReadingProgress] = useState(0);
-  const articleRef = useRef(null);
-
   const isArabic = language === "ar";
 
   useEffect(() => {
@@ -276,40 +249,6 @@ const BlogDetail = () => {
       window.removeEventListener("languageChanged", handleLanguageChanged);
     };
   }, []);
-
-  useEffect(() => {
-    const updateReadingProgress = () => {
-      const article = articleRef.current;
-
-      if (!article) {
-        setReadingProgress(0);
-        return;
-      }
-
-      const articleTop = article.offsetTop;
-      const articleHeight = article.scrollHeight;
-      const windowHeight = window.innerHeight;
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-      const start = articleTop - windowHeight * 0.35;
-      const end = articleTop + articleHeight - windowHeight;
-
-      const progress = ((scrollTop - start) / (end - start)) * 100;
-      const safeProgress = Math.min(Math.max(progress, 0), 100);
-
-      setReadingProgress(safeProgress);
-    };
-
-    updateReadingProgress();
-
-    window.addEventListener("scroll", updateReadingProgress);
-    window.addEventListener("resize", updateReadingProgress);
-
-    return () => {
-      window.removeEventListener("scroll", updateReadingProgress);
-      window.removeEventListener("resize", updateReadingProgress);
-    };
-  }, [blog, language]);
 
   useEffect(() => {
     const fetchBlogData = async () => {
@@ -410,27 +349,14 @@ const BlogDetail = () => {
     setEmail("");
   };
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-    } catch (error) {
-      console.error("Could not copy link:", error);
-    }
-  };
-
   if (loading) {
     return (
       <main className="blog-detail-page" dir={isArabic ? "rtl" : "ltr"}>
         <section className="blog-detail-hero">
           <div className="blog-detail-container">
-            <div className="blog-detail-progress">
-              <div
-                className="blog-detail-progress__bar"
-                style={{ width: `${readingProgress}%` }}
-              />
-            </div>
-
-            <p>{isArabic ? "جاري تحميل المقال..." : "Loading article..."}</p>
+            <p className="blog-detail-loading">
+              {isArabic ? "جاري تحميل المقال..." : "Loading article..."}
+            </p>
           </div>
         </section>
       </main>
@@ -442,13 +368,13 @@ const BlogDetail = () => {
       <main className="blog-detail-page" dir={isArabic ? "rtl" : "ltr"}>
         <section className="blog-detail-hero">
           <div className="blog-detail-container">
-            <div className="blog-detail-progress"></div>
+            <div className="blog-detail-not-found">
+              <h1>{isArabic ? "المقال غير موجود" : "Article not found"}</h1>
 
-            <h1>{isArabic ? "المقال غير موجود" : "Article not found"}</h1>
-
-            <Link to="/blog">
-              {isArabic ? "العودة إلى المدونة" : "Back to blog"}
-            </Link>
+              <Link to="/blog">
+                {isArabic ? "العودة إلى المدونة" : "Back to blog"}
+              </Link>
+            </div>
           </div>
         </section>
       </main>
@@ -457,31 +383,122 @@ const BlogDetail = () => {
 
   const title = getBlogTitle(blog, language);
   const subtitle = getBlogSubtitle(blog, language);
-  const authorName = getBlogAuthor(blog, language);
-  const authorLabel = getBlogAuthorLabel(blog, language, isArabic);
-  const publishedLabel = getBlogPublishedLabel(blog, language, isArabic);
   const publishedText = getBlogPublishedText(blog, language);
-  const readTime = getBlogReadTime(blog, language);
+  const readTime = getBlogReadTime(blog, language, isArabic);
   const heroImage = getBlogHeroImage(blog, language);
   const contentImage = getBlogContentImage(blog, language);
   const imageAlt = getBlogImageAlt(blog, language) || title;
   const articleHtml = getBlogArticleHtml(blog, language);
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const encodedShareUrl = encodeURIComponent(shareUrl);
+  const encodedTitle = encodeURIComponent(title);
+
+  const socialLinks = [
+    {
+      name: "Instagram",
+      icon: InstagramShareIcon,
+      href: "https://www.instagram.com/",
+    },
+    {
+      name: "X",
+      icon: XShareIcon,
+      href: `https://twitter.com/intent/tweet?url=${encodedShareUrl}&text=${encodedTitle}`,
+    },
+    {
+      name: "WhatsApp",
+      icon: WhatsappShareIcon,
+      href: `https://wa.me/?text=${encodedTitle}%20${encodedShareUrl}`,
+    },
+    {
+      name: "LinkedIn",
+      icon: LinkedinShareIcon,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`,
+    },
+    {
+      name: "Facebook",
+      icon: FacebookShareIcon,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`,
+    },
+  ];
+
+  const introTitle =
+    localizedBlog.introductionTitle || (isArabic ? "المقدمة" : "Introduction");
+
+  const introText =
+    localizedBlog.introductionText ||
+    localizedBlog.description ||
+    subtitle ||
+    "";
+
+  const quoteText = localizedBlog.quoteText || localizedBlog.quote || "";
+
+  const softwareTitle =
+    localizedBlog.softwareTitle ||
+    localizedBlog.toolsTitle ||
+    localizedBlog.softwareAndToolsTitle ||
+    "";
+
+  const resourcesTitle =
+    localizedBlog.resourcesTitle ||
+    localizedBlog.otherResourcesTitle ||
+    "";
+
+  const resourcesText =
+    localizedBlog.resourcesText ||
+    localizedBlog.otherResourcesText ||
+    "";
+
+  const resourcesList = Array.isArray(localizedBlog.resourcesList)
+    ? localizedBlog.resourcesList
+    : [];
+
+  const closingText =
+    localizedBlog.closingText ||
+    localizedBlog.conclusionText ||
+    "";
 
   return (
     <main className="blog-detail-page" dir={isArabic ? "rtl" : "ltr"}>
       <section className="blog-detail-hero">
         <div className="blog-detail-container">
           <div className="blog-detail-hero__content">
-            <div className="blog-detail-meta-pill">
+            <div className="blog-detail-meta-line">
               {publishedText && <span>{publishedText}</span>}
-              {readTime && <span>{readTime}</span>}
+
+              {publishedText && readTime && (
+                <span className="blog-detail-meta-line__dash">—</span>
+              )}
+
+              {readTime && (
+                <>
+                  <span className="blog-detail-meta-line__clock" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
+                      <path
+                        d="M12 7v5l3.2 2"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+
+                  <span>{readTime}</span>
+                </>
+              )}
             </div>
 
             <h1>{title}</h1>
 
-            <p>{subtitle}</p>
+            {subtitle && <p>{subtitle}</p>}
           </div>
 
           <img
@@ -489,70 +506,12 @@ const BlogDetail = () => {
             src={heroImage}
             alt={imageAlt}
           />
-
-          <div className="blog-detail-hero__bottom">
-            <div className="blog-detail-author-info">
-              <div>
-                <span>{authorLabel}</span>
-                <strong>{authorName}</strong>
-              </div>
-
-              <div>
-                <span>{publishedLabel}</span>
-                <strong>{publishedText}</strong>
-              </div>
-            </div>
-
-            <div className="blog-detail-share">
-              <button
-                type="button"
-                className="blog-detail-copy-btn"
-                onClick={handleCopyLink}
-              >
-                <img src={CopyLinkIcon} alt="" />
-                {isArabic ? "نسخ الرابط" : "Copy link"}
-              </button>
-
-              <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                  shareUrl
-                )}&text=${encodeURIComponent(title)}`}
-                aria-label="Share on X"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <img src={XShareIcon} alt="" />
-              </a>
-
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                  shareUrl
-                )}`}
-                aria-label="Share on Facebook"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <img src={FacebookShareIcon} alt="" />
-              </a>
-
-              <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-                  shareUrl
-                )}`}
-                aria-label="Share on LinkedIn"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <img src={LinkedinShareIcon} alt="" />
-              </a>
-            </div>
-          </div>
         </div>
       </section>
 
       <section className="blog-detail-content-section">
         <div className="blog-detail-content-container">
-          <article className="blog-detail-article" ref={articleRef}>
+          <article className="blog-detail-article">
             {articleHtml ? (
               <div
                 className="blog-detail-html"
@@ -560,23 +519,59 @@ const BlogDetail = () => {
               />
             ) : (
               <>
-                {localizedBlog.introductionTitle && (
-                  <h2>{localizedBlog.introductionTitle}</h2>
-                )}
+                <h2>{introTitle}</h2>
 
-                {localizedBlog.introductionText && (
-                  <p>{localizedBlog.introductionText}</p>
-                )}
+                {introText && <p>{introText}</p>}
 
                 <figure>
                   <img src={contentImage} alt={imageAlt} />
+
                   {localizedBlog.contentImageCaption && (
                     <figcaption>{localizedBlog.contentImageCaption}</figcaption>
                   )}
                 </figure>
+
+                {localizedBlog.afterImageText && (
+                  <p>{localizedBlog.afterImageText}</p>
+                )}
+
+                {quoteText && <blockquote>“{quoteText}”</blockquote>}
+
+                {softwareTitle && <h3>{softwareTitle}</h3>}
+
+                {resourcesTitle && <h3>{resourcesTitle}</h3>}
+
+                {resourcesText && <p>{resourcesText}</p>}
+
+                {resourcesList.length > 0 && (
+                  <ol>
+                    {resourcesList.map((item, index) => (
+                      <li key={`resource-${index}`}>{item}</li>
+                    ))}
+                  </ol>
+                )}
+
+                {closingText && <p>{closingText}</p>}
               </>
             )}
           </article>
+
+          <nav
+            className="blog-detail-share-rail"
+            aria-label={isArabic ? "مشاركة المقال" : "Share article"}
+          >
+            {socialLinks.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={item.name}
+              >
+                <img src={item.icon} alt="" draggable="false" />
+              </a>
+            ))}
+          </nav>
 
           <aside className="blog-detail-sidebar">
             <div className="blog-detail-newsletter-card">
@@ -588,7 +583,7 @@ const BlogDetail = () => {
 
               <p>
                 {isArabic
-                  ? "بدون إزعاج. فقط أحدث المقالات والنصائح في بريدك كل أسبوع."
+                  ? "بدون إزعاج. فقط أحدث المقالات والنصائح والموارد في بريدك كل أسبوع."
                   : "No spam. Just the latest releases and tips, interesting articles, and exclusive interviews in your inbox every week."}
               </p>
 
@@ -601,6 +596,14 @@ const BlogDetail = () => {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
+
+                <div className="blog-detail-newsletter-policy">
+                  {isArabic ? "اقرأ عن " : "Read about our "}
+                  <a href="#privacy">
+                    {isArabic ? "سياسة الخصوصية" : "privacy policy"}
+                  </a>
+                  .
+                </div>
 
                 <button type="submit">
                   {isArabic ? "اشترك" : "Subscribe"}

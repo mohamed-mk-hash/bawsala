@@ -23,6 +23,7 @@ import Product from "./pages/Products/Product";
 import ProductDetails from "./pages/ProductDetails/ProductDetails";
 import BlogDetail from "./pages/BlogDetail/BlogDetail";
 import ScrollToTop from "./Components/ScrollToTop";
+import TechnicalOfferPage from "./pages/Dashboard/TechnicalOfferPage";
 export default function App() {
   return (
     <div>
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/services/:slug" element={<ServiceDetail />} />
         <Route path="/products" element={<Product />} />
         <Route path="/products/:slug" element={<ProductDetails />} />
+        <Route path="/technical-offers/:offerId" element={<TechnicalOfferPage />} />
       </Routes>
       <Footer/>
     </div>

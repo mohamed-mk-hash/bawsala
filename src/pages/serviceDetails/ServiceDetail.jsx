@@ -1,10 +1,19 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { addDoc, collection, getDocs, limit, query, serverTimestamp, where } from "firebase/firestore";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  limit,
+  query,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 import "./ServiceDetail.css";
 
-import { db } from "../../firebase";
+import { auth, db } from "../../firebase";
 
 import homeIcon from "../../assets/Home_icon.png";
 
@@ -48,6 +57,542 @@ const FALLBACK_TEMPLATE_IMAGES = [
   businessPlanTemplate,
   financialReportTemplate,
   humanResourcesTemplate,
+];
+
+const COMMON_REQUEST_INITIAL_FORM = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  company: "",
+  servicePackage: "",
+  message: "",
+  privacy: false,
+};
+
+const SERVICE_REQUEST_LOGIN_PATH = "/login";
+
+const getNamePartsFromDisplayName = (displayName = "") => {
+  const parts = String(displayName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+};
+
+const getRequestFormForUser = (user, currentForm = COMMON_REQUEST_INITIAL_FORM) => {
+  if (!user) return { ...currentForm };
+
+  const nameParts = getNamePartsFromDisplayName(user.displayName);
+
+  return {
+    ...currentForm,
+    firstName: currentForm.firstName || nameParts.firstName || "",
+    lastName: currentForm.lastName || nameParts.lastName || "",
+    email: user.email || currentForm.email || "",
+  };
+};
+
+const SERVICE_REQUEST_FIELD_GROUPS = [
+  {
+    id: "administrative-development",
+    aliases: [
+      "administrative-development",
+      "administrative development",
+      "development administrative",
+      "التطوير الإداري",
+      "تطوير إداري",
+    ],
+    fields: [
+      {
+        name: "companySize",
+        type: "text",
+        required: true,
+        label: {
+          en: "Company size",
+          ar: "حجم المؤسسة",
+        },
+        placeholder: {
+          en: "Example: 10 employees, 50 employees...",
+          ar: "مثال: 10 موظفين، 50 موظف...",
+        },
+      },
+      {
+        name: "department",
+        type: "text",
+        required: false,
+        label: {
+          en: "Department or area to improve",
+          ar: "القسم أو المجال الذي تريد تطويره",
+        },
+        placeholder: {
+          en: "HR, operations, administration...",
+          ar: "الموارد البشرية، العمليات، الإدارة...",
+        },
+      },
+      {
+        name: "currentChallenges",
+        type: "textarea",
+        required: true,
+        label: {
+          en: "Current administrative challenges",
+          ar: "المشاكل الإدارية الحالية",
+        },
+        placeholder: {
+          en: "Explain the current problems you want to solve...",
+          ar: "اشرح المشاكل الحالية التي تريد حلها...",
+        },
+      },
+      {
+        name: "workflowTools",
+        type: "text",
+        required: false,
+        label: {
+          en: "Current tools or systems used",
+          ar: "الأدوات أو الأنظمة المستعملة حاليًا",
+        },
+        placeholder: {
+          en: "Excel, Notion, ERP, paper process...",
+          ar: "Excel, Notion, ERP، أو العمل الورقي...",
+        },
+      },
+      {
+        name: "timeline",
+        type: "text",
+        required: false,
+        label: {
+          en: "Preferred timeline",
+          ar: "المدة أو موعد البداية",
+        },
+        placeholder: {
+          en: "Example: within 2 weeks",
+          ar: "مثال: خلال أسبوعين",
+        },
+      },
+      {
+        name: "budget",
+        type: "text",
+        required: false,
+        label: {
+          en: "Expected budget",
+          ar: "الميزانية المتوقعة",
+        },
+        placeholder: {
+          en: "Example: 100,000 DZD",
+          ar: "مثال: 100,000 دج",
+        },
+      },
+    ],
+  },
+  {
+    id: "curricula-and-programs",
+    aliases: [
+      "curricula-and-programs",
+      "curricula and programs",
+      "curriculum and programs",
+      "curricula programs",
+      "البرامج والمناهج",
+      "المناهج والبرامج",
+    ],
+    fields: [
+      {
+        name: "programType",
+        type: "select",
+        required: true,
+        label: {
+          en: "Program type",
+          ar: "نوع البرنامج",
+        },
+        placeholder: {
+          en: "Choose program type",
+          ar: "اختر نوع البرنامج",
+        },
+        options: [
+          {
+            value: "training-program",
+            label: { en: "Training program", ar: "برنامج تدريبي" },
+          },
+          {
+            value: "educational-curriculum",
+            label: { en: "Educational curriculum", ar: "منهج تعليمي" },
+          },
+          {
+            value: "workshop",
+            label: { en: "Workshop", ar: "ورشة عمل" },
+          },
+          {
+            value: "other",
+            label: { en: "Other", ar: "أخرى" },
+          },
+        ],
+      },
+      {
+        name: "targetAudience",
+        type: "text",
+        required: true,
+        label: {
+          en: "Target audience",
+          ar: "الفئة المستهدفة",
+        },
+        placeholder: {
+          en: "Students, employees, managers...",
+          ar: "طلاب، موظفون، مدراء...",
+        },
+      },
+      {
+        name: "numberOfLearners",
+        type: "text",
+        required: false,
+        label: {
+          en: "Number of learners",
+          ar: "عدد المتعلمين",
+        },
+        placeholder: {
+          en: "Example: 20 learners",
+          ar: "مثال: 20 متعلم",
+        },
+      },
+      {
+        name: "learningObjectives",
+        type: "textarea",
+        required: true,
+        label: {
+          en: "Learning objectives",
+          ar: "الأهداف التعليمية",
+        },
+        placeholder: {
+          en: "What should participants learn or achieve?",
+          ar: "ماذا يجب أن يتعلم أو يحقق المشاركون؟",
+        },
+      },
+      {
+        name: "preferredFormat",
+        type: "select",
+        required: false,
+        label: {
+          en: "Preferred format",
+          ar: "الشكل المفضل",
+        },
+        placeholder: {
+          en: "Choose format",
+          ar: "اختر الشكل",
+        },
+        options: [
+          {
+            value: "online",
+            label: { en: "Online", ar: "عن بعد" },
+          },
+          {
+            value: "in-person",
+            label: { en: "In person", ar: "حضوري" },
+          },
+          {
+            value: "hybrid",
+            label: { en: "Hybrid", ar: "مختلط" },
+          },
+        ],
+      },
+      {
+        name: "existingMaterials",
+        type: "textarea",
+        required: false,
+        label: {
+          en: "Existing materials",
+          ar: "المواد المتوفرة حاليًا",
+        },
+        placeholder: {
+          en: "Do you already have documents, slides, or references?",
+          ar: "هل لديك ملفات، عروض، أو مراجع موجودة؟",
+        },
+      },
+      {
+        name: "timeline",
+        type: "text",
+        required: false,
+        label: {
+          en: "Preferred timeline",
+          ar: "المدة أو موعد التسليم",
+        },
+        placeholder: {
+          en: "Example: 1 month",
+          ar: "مثال: شهر واحد",
+        },
+      },
+    ],
+  },
+  {
+    id: "social-media-management",
+    aliases: [
+      "social-media-management",
+      "social media management",
+      "social media",
+      "إدارة وسائل التواصل الاجتماعي",
+      "ادارة وسائل التواصل الاجتماعي",
+    ],
+    fields: [
+      {
+        name: "platforms",
+        type: "text",
+        required: true,
+        label: {
+          en: "Platforms you want to manage",
+          ar: "المنصات التي تريد إدارتها",
+        },
+        placeholder: {
+          en: "Instagram, Facebook, LinkedIn, TikTok...",
+          ar: "Instagram, Facebook, LinkedIn, TikTok...",
+        },
+      },
+      {
+        name: "accountLinks",
+        type: "textarea",
+        required: false,
+        label: {
+          en: "Current account links",
+          ar: "روابط الحسابات الحالية",
+        },
+        placeholder: {
+          en: "Paste your social media account links...",
+          ar: "ضع روابط حسابات التواصل الاجتماعي...",
+        },
+      },
+      {
+        name: "goals",
+        type: "textarea",
+        required: true,
+        label: {
+          en: "Main goals",
+          ar: "الأهداف الرئيسية",
+        },
+        placeholder: {
+          en: "Awareness, leads, sales, engagement...",
+          ar: "زيادة الوعي، جلب عملاء، مبيعات، تفاعل...",
+        },
+      },
+      {
+        name: "contentTypes",
+        type: "text",
+        required: false,
+        label: {
+          en: "Preferred content types",
+          ar: "أنواع المحتوى المطلوبة",
+        },
+        placeholder: {
+          en: "Posts, reels, stories, ads...",
+          ar: "منشورات، Reels، Stories، إعلانات...",
+        },
+      },
+      {
+        name: "postingFrequency",
+        type: "text",
+        required: false,
+        label: {
+          en: "Posting frequency",
+          ar: "عدد المنشورات المطلوب",
+        },
+        placeholder: {
+          en: "Example: 3 posts per week",
+          ar: "مثال: 3 منشورات في الأسبوع",
+        },
+      },
+      {
+        name: "brandAssets",
+        type: "textarea",
+        required: false,
+        label: {
+          en: "Brand assets",
+          ar: "ملفات الهوية البصرية",
+        },
+        placeholder: {
+          en: "Do you have logo, colors, brand guide, photos?",
+          ar: "هل لديك شعار، ألوان، دليل هوية، صور؟",
+        },
+      },
+      {
+        name: "monthlyBudget",
+        type: "text",
+        required: false,
+        label: {
+          en: "Monthly budget",
+          ar: "الميزانية الشهرية",
+        },
+        placeholder: {
+          en: "Example: 80,000 DZD / month",
+          ar: "مثال: 80,000 دج / شهر",
+        },
+      },
+    ],
+  },
+  {
+    id: "website-design-management",
+    aliases: [
+      "website-design-management",
+      "website design and management",
+      "website design & management",
+      "website design",
+      "تصميم وإدارة المواقع",
+      "تصميم وادارة المواقع",
+    ],
+    fields: [
+      {
+        name: "projectType",
+        type: "select",
+        required: true,
+        label: {
+          en: "Project type",
+          ar: "نوع المشروع",
+        },
+        placeholder: {
+          en: "Choose project type",
+          ar: "اختر نوع المشروع",
+        },
+        options: [
+          {
+            value: "new-website",
+            label: { en: "New website", ar: "موقع جديد" },
+          },
+          {
+            value: "redesign",
+            label: { en: "Website redesign", ar: "إعادة تصميم موقع" },
+          },
+          {
+            value: "management",
+            label: { en: "Website management", ar: "إدارة موقع" },
+          },
+          {
+            value: "maintenance",
+            label: { en: "Maintenance", ar: "صيانة" },
+          },
+        ],
+      },
+      {
+        name: "hasWebsite",
+        type: "select",
+        required: true,
+        label: {
+          en: "Do you already have a website?",
+          ar: "هل لديك موقع حاليًا؟",
+        },
+        placeholder: {
+          en: "Choose answer",
+          ar: "اختر الإجابة",
+        },
+        options: [
+          {
+            value: "yes",
+            label: { en: "Yes", ar: "نعم" },
+          },
+          {
+            value: "no",
+            label: { en: "No", ar: "لا" },
+          },
+        ],
+      },
+      {
+        name: "websiteUrl",
+        type: "url",
+        required: false,
+        visibleWhen: {
+          field: "hasWebsite",
+          value: "yes",
+        },
+        requiredWhen: {
+          field: "hasWebsite",
+          value: "yes",
+        },
+        label: {
+          en: "Current website URL",
+          ar: "رابط الموقع الحالي",
+        },
+        placeholder: {
+          en: "https://example.com",
+          ar: "https://example.com",
+        },
+      },
+      {
+        name: "numberOfPages",
+        type: "text",
+        required: false,
+        label: {
+          en: "Expected number of pages",
+          ar: "عدد الصفحات المتوقع",
+        },
+        placeholder: {
+          en: "Example: Home, About, Services, Contact...",
+          ar: "مثال: الرئيسية، من نحن، الخدمات، تواصل معنا...",
+        },
+      },
+      {
+        name: "neededFeatures",
+        type: "textarea",
+        required: true,
+        label: {
+          en: "Required features",
+          ar: "الخصائص المطلوبة",
+        },
+        placeholder: {
+          en: "Booking, payment, blog, dashboard, multilingual...",
+          ar: "حجز، دفع، مدونة، لوحة تحكم، متعدد اللغات...",
+        },
+      },
+      {
+        name: "domainHosting",
+        type: "textarea",
+        required: false,
+        label: {
+          en: "Domain and hosting",
+          ar: "الدومين والاستضافة",
+        },
+        placeholder: {
+          en: "Do you already have domain and hosting?",
+          ar: "هل لديك دومين واستضافة حاليًا؟",
+        },
+      },
+      {
+        name: "designReferences",
+        type: "textarea",
+        required: false,
+        label: {
+          en: "Design references",
+          ar: "مراجع أو أمثلة للتصميم",
+        },
+        placeholder: {
+          en: "Paste websites you like...",
+          ar: "ضع روابط مواقع أعجبتك...",
+        },
+      },
+      {
+        name: "deadline",
+        type: "text",
+        required: false,
+        label: {
+          en: "Deadline",
+          ar: "موعد التسليم المطلوب",
+        },
+        placeholder: {
+          en: "Example: before next month",
+          ar: "مثال: قبل الشهر القادم",
+        },
+      },
+      {
+        name: "budget",
+        type: "text",
+        required: false,
+        label: {
+          en: "Expected budget",
+          ar: "الميزانية المتوقعة",
+        },
+        placeholder: {
+          en: "Example: 150,000 DZD",
+          ar: "مثال: 150,000 دج",
+        },
+      },
+    ],
+  },
 ];
 
 const getInitialLanguage = () => {
@@ -99,6 +644,127 @@ const getServiceDescription = (service, language) => {
   const localizedService = getLocalizedObject(service, language);
 
   return localizedService.heroDescription || localizedService.seoDescription || "";
+};
+
+const normalizeServiceKey = (value) => {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\u0600-\u06ff]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
+const getServiceFieldConfig = (service, language) => {
+  if (!service) return null;
+
+  const candidates = [
+    service?.id,
+    service?.slug,
+    service?.en?.slug,
+    service?.ar?.slug,
+    service?.en?.heroTitle,
+    service?.ar?.heroTitle,
+    service?.en?.breadcrumbTitle,
+    service?.ar?.breadcrumbTitle,
+    service?.en?.seoTitle,
+    service?.ar?.seoTitle,
+    getServiceSlug(service),
+    getServiceTitle(service, language),
+  ]
+    .filter(Boolean)
+    .map(normalizeServiceKey);
+
+  return (
+    SERVICE_REQUEST_FIELD_GROUPS.find((group) => {
+      const aliases = group.aliases.map(normalizeServiceKey);
+
+      return aliases.some((alias) => {
+        return candidates.some((candidate) => {
+          return candidate === alias || candidate.includes(alias);
+        });
+      });
+    }) || null
+  );
+};
+
+const createInitialSpecificForm = (fields) => {
+  return fields.reduce((form, field) => {
+    form[field.name] = "";
+    return form;
+  }, {});
+};
+
+const doesConditionalRuleMatch = (rule, form) => {
+  if (!rule) return true;
+
+  const currentValue = form?.[rule.field];
+
+  if (Array.isArray(rule.value)) {
+    return rule.value.includes(currentValue);
+  }
+
+  if (Array.isArray(rule.values)) {
+    return rule.values.includes(currentValue);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(rule, "notValue")) {
+    return currentValue !== rule.notValue;
+  }
+
+  if (Array.isArray(rule.notValues)) {
+    return !rule.notValues.includes(currentValue);
+  }
+
+  return currentValue === rule.value;
+};
+
+const isServiceSpecificFieldVisible = (field, form) => {
+  return doesConditionalRuleMatch(field.visibleWhen, form);
+};
+
+const isServiceSpecificFieldRequired = (field, form) => {
+  if (!isServiceSpecificFieldVisible(field, form)) return false;
+
+  if (field.requiredWhen) {
+    return doesConditionalRuleMatch(field.requiredWhen, form);
+  }
+
+  return Boolean(field.required);
+};
+
+const getCleanSpecificAnswers = (form, fields = null) => {
+  const visibleFieldNames = fields
+    ? new Set(
+        fields
+          .filter((field) => isServiceSpecificFieldVisible(field, form))
+          .map((field) => field.name)
+      )
+    : null;
+
+  return Object.entries(form).reduce((answers, [key, value]) => {
+    if (visibleFieldNames && !visibleFieldNames.has(key)) {
+      return answers;
+    }
+
+    const cleanValue = typeof value === "string" ? value.trim() : value;
+
+    if (cleanValue !== "" && cleanValue !== null && cleanValue !== undefined) {
+      answers[key] = cleanValue;
+    }
+
+    return answers;
+  }, {});
+};
+
+const getSpecificQuestionLabels = (fields, language, form = null) => {
+  return fields.reduce((labels, field) => {
+    if (form && !isServiceSpecificFieldVisible(field, form)) {
+      return labels;
+    }
+
+    labels[field.name] = getLocalizedText(field.label, language);
+    return labels;
+  }, {});
 };
 
 const normalizeList = (value) => {
@@ -176,13 +842,17 @@ const getFallbackText = (language) => {
     backToServices: isArabic ? "العودة إلى الخدمات" : "Back to services",
 
     overviewLabel: isArabic ? "نظرة عامة على الخدمة" : "Service overview",
-    overviewTitle: isArabic ? "حل عملي مصمم حسب احتياجك" : "A practical solution built around your needs",
+    overviewTitle: isArabic
+      ? "حل عملي مصمم حسب احتياجك"
+      : "A practical solution built around your needs",
 
     benefitsTitle: isArabic ? "ما الذي ستحصل عليه" : "What you will get",
     deliverablesTitle: isArabic ? "مخرجات الخدمة" : "Service deliverables",
     processTitle: isArabic ? "كيف نعمل" : "How we work",
     pricingTitle: isArabic ? "الباقات والأسعار" : "Packages and pricing",
-    resourcesTitle: isArabic ? "أدلة وموارد قابلة للتحميل" : "Downloadable guides and resources",
+    resourcesTitle: isArabic
+      ? "أدلة وموارد قابلة للتحميل"
+      : "Downloadable guides and resources",
     resourcesDescription: isArabic
       ? "احصل على أدلة احترافية وموارد جاهزة لدعم رحلة تطوير أعمالك."
       : "Access professional guides and ready-to-use resources to support your business development journey.",
@@ -203,27 +873,27 @@ const getFallbackText = (language) => {
     phone: isArabic ? "رقم الهاتف" : "Phone number",
     company: isArabic ? "اسم المؤسسة / الشركة" : "Company / organization",
     servicePackage: isArabic ? "الباقة المطلوبة" : "Preferred package",
-    budget: isArabic ? "الميزانية المتوقعة" : "Expected budget",
-    timeline: isArabic ? "موعد البداية أو التسليم" : "Start or delivery timeline",
-    platforms: isArabic ? "المنصات أو القنوات" : "Platforms or channels",
-    goals: isArabic ? "الأهداف الرئيسية" : "Main goals",
     message: isArabic ? "تفاصيل إضافية" : "Additional details",
     firstNamePlaceholder: isArabic ? "الاسم الأول" : "First name",
     lastNamePlaceholder: isArabic ? "اللقب" : "Last name",
     emailPlaceholder: "you@company.com",
     phonePlaceholder: isArabic ? "+213 ..." : "+213 ...",
     companyPlaceholder: isArabic ? "مثال: بوصلة" : "Example: Bawsala",
-    packagePlaceholder: isArabic ? "اختر باقة أو اكتب طلب مخصص" : "Choose a package or custom request",
-    budgetPlaceholder: isArabic ? "مثال: 100,000 دج" : "Example: 100,000 DZD",
-    timelinePlaceholder: isArabic ? "مثال: خلال أسبوعين" : "Example: within two weeks",
-    platformsPlaceholder: isArabic ? "Instagram, Facebook, LinkedIn..." : "Instagram, Facebook, LinkedIn...",
-    goalsPlaceholder: isArabic ? "زيادة الوعي، جذب عملاء، تحسين الهوية..." : "Awareness, leads, branding...",
-    messagePlaceholder: isArabic ? "اكتب أي تفاصيل مهمة عن الخدمة المطلوبة..." : "Share any important details about the service you need...",
+    packagePlaceholder: isArabic
+      ? "اختر باقة أو اكتب طلب مخصص"
+      : "Choose a package or custom request",
+    messagePlaceholder: isArabic
+      ? "اكتب أي تفاصيل مهمة عن الخدمة المطلوبة..."
+      : "Share any important details about the service you need...",
     privacy: isArabic ? "أنت توافق على" : "You agree to our friendly",
     privacyLink: isArabic ? "سياسة الخصوصية" : "privacy policy",
     sendRequest: isArabic ? "إرسال الطلب" : "Send Request",
-    requestSuccess: isArabic ? "تم تسجيل طلبك بنجاح. سنتواصل معك قريباً." : "Your request was submitted successfully. We will contact you soon.",
-    requestError: isArabic ? "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى." : "Something went wrong while sending the request. Please try again.",
+    requestSuccess: isArabic
+      ? "تم تسجيل طلبك بنجاح. سنتواصل معك قريباً."
+      : "Your request was submitted successfully. We will contact you soon.",
+    requestError: isArabic
+      ? "حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى."
+      : "Something went wrong while sending the request. Please try again.",
 
     testimonialsLabel: isArabic ? "آراء العملاء" : "TESTIMONIALS",
     testimonialsTitle: isArabic
@@ -245,27 +915,18 @@ const getFallbackText = (language) => {
 
 const ServiceDetail = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
 
   const [language, setLanguage] = useState(getInitialLanguage);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestMessage, setRequestMessage] = useState({ type: "", text: "" });
 
-  const [requestForm, setRequestForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    company: "",
-    servicePackage: "",
-    budget: "",
-    timeline: "",
-    platforms: "",
-    goals: "",
-    message: "",
-    privacy: false,
-  });
+  const [requestForm, setRequestForm] = useState(COMMON_REQUEST_INITIAL_FORM);
+  const [serviceSpecificForm, setServiceSpecificForm] = useState({});
 
   const testimonialScrollerRef = useRef(null);
   const serviceRequestRef = useRef(null);
@@ -277,6 +938,41 @@ const ServiceDetail = () => {
   const localizedService = useMemo(() => {
     return getLocalizedObject(service, language);
   }, [service, language]);
+
+  const serviceFieldConfig = useMemo(() => {
+    return getServiceFieldConfig(service, language);
+  }, [service, language]);
+
+  const serviceSpecificFields = useMemo(() => {
+    return serviceFieldConfig?.fields || [];
+  }, [serviceFieldConfig]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthReady(true);
+
+      if (user) {
+        setRequestForm((currentForm) =>
+          getRequestFormForUser(user, currentForm)
+        );
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    setServiceSpecificForm((currentForm) => {
+      const nextForm = createInitialSpecificForm(serviceSpecificFields);
+
+      Object.keys(nextForm).forEach((fieldName) => {
+        nextForm[fieldName] = currentForm[fieldName] || "";
+      });
+
+      return nextForm;
+    });
+  }, [serviceSpecificFields]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -364,6 +1060,41 @@ const ServiceDetail = () => {
     fetchService();
   }, [slug]);
 
+  const getServiceRequestRedirectPath = () => {
+    return `${window.location.pathname}${window.location.search}#service-request`;
+  };
+
+  const redirectToLoginForServiceRequest = () => {
+    const redirectPath = getServiceRequestRedirectPath();
+
+    sessionStorage.setItem("redirectAfterLogin", redirectPath);
+
+    navigate(
+      `${SERVICE_REQUEST_LOGIN_PATH}?redirect=${encodeURIComponent(redirectPath)}&notice=service-request`
+    );
+  };
+
+  const requireLoginForRequest = () => {
+    if (!authReady) return true;
+
+    if (currentUser) return false;
+
+    redirectToLoginForServiceRequest();
+    return true;
+  };
+
+  const handleRequestFormInteraction = (event) => {
+    const field = event.target?.closest?.("input, select, textarea");
+
+    if (!field || field.type === "hidden") return;
+
+    if (requireLoginForRequest()) {
+      event.preventDefault();
+      event.stopPropagation();
+      field.blur?.();
+    }
+  };
+
   const scrollToRequestForm = (event) => {
     if (event) event.preventDefault();
 
@@ -371,14 +1102,11 @@ const ServiceDetail = () => {
       behavior: "smooth",
       block: "start",
     });
-
-    window.setTimeout(() => {
-      const firstInput = serviceRequestRef.current?.querySelector("input, select, textarea");
-      firstInput?.focus?.({ preventScroll: true });
-    }, 520);
   };
 
   const handleRequestChange = (event) => {
+    if (requireLoginForRequest()) return;
+
     const { name, value, type, checked } = event.target;
 
     setRequestForm((currentForm) => ({
@@ -387,9 +1115,32 @@ const ServiceDetail = () => {
     }));
   };
 
+  const handleServiceSpecificChange = (event) => {
+    if (requireLoginForRequest()) return;
+
+    const { name, value } = event.target;
+
+    setServiceSpecificForm((currentForm) => {
+      const nextForm = {
+        ...currentForm,
+        [name]: value,
+      };
+
+      serviceSpecificFields.forEach((field) => {
+        if (!isServiceSpecificFieldVisible(field, nextForm)) {
+          nextForm[field.name] = "";
+        }
+      });
+
+      return nextForm;
+    });
+  };
+
   const handleRequestSubmit = async (event) => {
     event.preventDefault();
     setRequestMessage({ type: "", text: "" });
+
+    if (requireLoginForRequest()) return;
 
     if (!requestForm.privacy) {
       setRequestMessage({
@@ -404,29 +1155,45 @@ const ServiceDetail = () => {
     try {
       setSubmittingRequest(true);
 
+      const serviceSpecificAnswers = getCleanSpecificAnswers(
+        serviceSpecificForm,
+        serviceSpecificFields
+      );
+
+      const userName =
+        currentUser.displayName ||
+        `${requestForm.firstName || ""} ${requestForm.lastName || ""}`.trim();
+
       await addDoc(collection(db, "serviceRequests"), {
         serviceId: service?.id || null,
         serviceSlug: getServiceSlug(service) || slug || "",
         serviceTitle: getServiceTitle(service, language),
+        serviceType: serviceFieldConfig?.id || "",
         language,
+
+        userId: currentUser.uid,
+        userEmail: currentUser.email || "",
+        userName,
+        userPhotoURL: currentUser.photoURL || "",
+        contactEmail: requestForm.email || currentUser.email || "",
+        requestStatus: "pending",
+        adminStatus: "pending",
+
         ...requestForm,
+        email: requestForm.email || currentUser.email || "",
+
+        serviceSpecificAnswers,
+        serviceSpecificQuestionLabels: getSpecificQuestionLabels(
+          serviceSpecificFields,
+          language,
+          serviceSpecificForm
+        ),
+
         createdAt: serverTimestamp(),
       });
 
-      setRequestForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        company: "",
-        servicePackage: "",
-        budget: "",
-        timeline: "",
-        platforms: "",
-        goals: "",
-        message: "",
-        privacy: false,
-      });
+      setRequestForm(getRequestFormForUser(currentUser, COMMON_REQUEST_INITIAL_FORM));
+      setServiceSpecificForm(createInitialSpecificForm(serviceSpecificFields));
 
       setRequestMessage({ type: "success", text: text.requestSuccess });
     } catch (error) {
@@ -474,7 +1241,12 @@ const ServiceDetail = () => {
         description: localizedResource.description || "",
         fileType: localizedResource.fileType || "",
         buttonText: localizedResource.buttonText || "",
-        url: localizedResource.url || localizedResource.fileUrl || resource.url || resource.fileUrl || "",
+        url:
+          localizedResource.url ||
+          localizedResource.fileUrl ||
+          resource.url ||
+          resource.fileUrl ||
+          "",
       };
     });
   }, [service, language]);
@@ -503,7 +1275,8 @@ const ServiceDetail = () => {
 
       return {
         id: step.id || index,
-        label: localizedStep.label || `${isArabic ? "الخطوة" : "Step"} ${index + 1}`,
+        label:
+          localizedStep.label || `${isArabic ? "الخطوة" : "Step"} ${index + 1}`,
         title: localizedStep.title || "",
         description: localizedStep.description || "",
       };
@@ -648,9 +1421,7 @@ const ServiceDetail = () => {
     "";
 
   const requestImage =
-    service.requestImageUrl ||
-    localizedService.requestImageUrl ||
-    "";
+    service.requestImageUrl || localizedService.requestImageUrl || "";
 
   const videoReviewImage =
     service.videoReviewImageUrl ||
@@ -718,7 +1489,11 @@ const ServiceDetail = () => {
 
               <p>{serviceDescription}</p>
 
-              <a href="#service-request" className="service-detail-hero__btn" onClick={scrollToRequestForm}>
+              <a
+                href="#service-request"
+                className="service-detail-hero__btn"
+                onClick={scrollToRequestForm}
+              >
                 {heroButtonText}
               </a>
             </div>
@@ -729,7 +1504,11 @@ const ServiceDetail = () => {
       {hasOverview && (
         <section className="service-overview-section">
           <div className="service-detail-container">
-            <div className={`service-overview-card ${!overviewImage ? "service-overview-card--text-only" : ""}`}>
+            <div
+              className={`service-overview-card ${
+                !overviewImage ? "service-overview-card--text-only" : ""
+              }`}
+            >
               <div className="service-overview-content">
                 <p className="service-section-kicker">
                   {localizedService.overviewLabel || text.overviewLabel}
@@ -746,7 +1525,10 @@ const ServiceDetail = () => {
 
               {overviewImage && (
                 <div className="service-overview-image-wrap">
-                  <img src={overviewImage} alt={localizedService.overviewTitle || serviceTitle} />
+                  <img
+                    src={overviewImage}
+                    alt={localizedService.overviewTitle || serviceTitle}
+                  />
                 </div>
               )}
             </div>
@@ -790,7 +1572,11 @@ const ServiceDetail = () => {
         <section className="service-templates-section">
           <div className="service-detail-container">
             <div className="service-section-header">
-              <h2>{localizedService.deliverablesTitle || localizedService.templatesTitle || text.deliverablesTitle}</h2>
+              <h2>
+                {localizedService.deliverablesTitle ||
+                  localizedService.templatesTitle ||
+                  text.deliverablesTitle}
+              </h2>
 
               <p>
                 {localizedService.deliverablesDescription ||
@@ -800,7 +1586,12 @@ const ServiceDetail = () => {
             </div>
 
             <div className="service-templates-panel">
-              <div className={`service-templates-grid service-card-grid--count-${Math.min(deliverables.length, 3)}`}>
+              <div
+                className={`service-templates-grid service-card-grid--count-${Math.min(
+                  deliverables.length,
+                  3
+                )}`}
+              >
                 {deliverables.map((item, index) => (
                   <article
                     className="service-template-card"
@@ -902,7 +1693,11 @@ const ServiceDetail = () => {
         <section className="service-guides-section">
           <div className="service-detail-container">
             <div className="service-section-header">
-              <h2>{localizedService.resourcesTitle || localizedService.guidesTitle || text.resourcesTitle}</h2>
+              <h2>
+                {localizedService.resourcesTitle ||
+                  localizedService.guidesTitle ||
+                  text.resourcesTitle}
+              </h2>
 
               <p>
                 {localizedService.resourcesDescription ||
@@ -912,7 +1707,12 @@ const ServiceDetail = () => {
             </div>
 
             <div className="service-guides-panel">
-              <div className={`service-guides-grid service-card-grid--count-${Math.min(resources.length, 3)}`}>
+              <div
+                className={`service-guides-grid service-card-grid--count-${Math.min(
+                  resources.length,
+                  3
+                )}`}
+              >
                 {resources.map((resource, index) => (
                   <article
                     className="service-guide-card"
@@ -936,13 +1736,17 @@ const ServiceDetail = () => {
 
                     <p>{resource.description}</p>
 
-                    {resource.fileType && (
-                      <small>{resource.fileType}</small>
-                    )}
+                    {resource.fileType && <small>{resource.fileType}</small>}
 
                     {resource.url && (
-                      <a href={resource.url} className="service-download-btn" target="_blank" rel="noreferrer">
-                        {resource.buttonText || (isArabic ? "تحميل المورد" : "Download resource")}
+                      <a
+                        href={resource.url}
+                        className="service-download-btn"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {resource.buttonText ||
+                          (isArabic ? "تحميل المورد" : "Download resource")}
                       </a>
                     )}
                   </article>
@@ -953,7 +1757,11 @@ const ServiceDetail = () => {
         </section>
       )}
 
-      <section className="service-request-section" id="service-request" ref={serviceRequestRef}>
+      <section
+        className="service-request-section"
+        id="service-request"
+        ref={serviceRequestRef}
+      >
         <div className="service-detail-container">
           <div className="service-request-card">
             <div className="service-request-left">
@@ -961,14 +1769,25 @@ const ServiceDetail = () => {
 
               <h2>{localizedService.requestTitle || text.requestTitle}</h2>
 
-              <span>{localizedService.requestDescription || text.requestDescription}</span>
+              <span>
+                {localizedService.requestDescription || text.requestDescription}
+              </span>
 
               {requestImage && (
-                <img src={requestImage} alt={localizedService.requestTitle || text.requestTitle} />
+                <img
+                  src={requestImage}
+                  alt={localizedService.requestTitle || text.requestTitle}
+                />
               )}
             </div>
 
-            <form className="service-request-form" onSubmit={handleRequestSubmit}>
+            <form
+              className="service-request-form"
+              onPointerDownCapture={handleRequestFormInteraction}
+              onFocusCapture={handleRequestFormInteraction}
+              onInputCapture={handleRequestFormInteraction}
+              onSubmit={handleRequestSubmit}
+            >
               <div className="service-request-form__grid">
                 <FormGroup label={text.firstName} htmlFor="firstName">
                   <input
@@ -1028,7 +1847,11 @@ const ServiceDetail = () => {
                 </FormGroup>
 
                 {showPackageSelect && (
-                  <FormGroup label={text.servicePackage} htmlFor="servicePackage" full>
+                  <FormGroup
+                    label={text.servicePackage}
+                    htmlFor="servicePackage"
+                    full
+                  >
                     <select
                       id="servicePackage"
                       name="servicePackage"
@@ -1037,11 +1860,33 @@ const ServiceDetail = () => {
                     >
                       <option value="">{text.packagePlaceholder}</option>
                       {requestPackageOptions.map((option) => (
-                        <option value={option} key={option}>{option}</option>
+                        <option value={option} key={option}>
+                          {option}
+                        </option>
                       ))}
                     </select>
                   </FormGroup>
                 )}
+
+                {serviceSpecificFields.map((field) => {
+                  if (!isServiceSpecificFieldVisible(field, serviceSpecificForm)) {
+                    return null;
+                  }
+
+                  return (
+                    <ServiceSpecificField
+                      key={field.name}
+                      field={field}
+                      language={language}
+                      value={serviceSpecificForm[field.name] || ""}
+                      onChange={handleServiceSpecificChange}
+                      required={isServiceSpecificFieldRequired(
+                        field,
+                        serviceSpecificForm
+                      )}
+                    />
+                  );
+                })}
 
                 <FormGroup label={text.message} htmlFor="message" full>
                   <textarea
@@ -1068,12 +1913,18 @@ const ServiceDetail = () => {
               </label>
 
               {requestMessage.text && (
-                <div className={`service-request-alert service-request-alert--${requestMessage.type}`}>
+                <div
+                  className={`service-request-alert service-request-alert--${requestMessage.type}`}
+                >
                   {requestMessage.text}
                 </div>
               )}
 
-              <button type="submit" className="service-request-submit" disabled={submittingRequest}>
+              <button
+                type="submit"
+                className="service-request-submit"
+                disabled={submittingRequest || !authReady}
+              >
                 {submittingRequest
                   ? isArabic
                     ? "جاري الإرسال..."
@@ -1098,7 +1949,11 @@ const ServiceDetail = () => {
 
             <div className="service-faq-list">
               {faqs.map((faq, index) => (
-                <details className="service-faq-item" key={faq.id} open={index === 0}>
+                <details
+                  className="service-faq-item"
+                  key={faq.id}
+                  open={index === 0}
+                >
                   <summary>{faq.question}</summary>
                   <p>{faq.answer}</p>
                 </details>
@@ -1115,9 +1970,14 @@ const ServiceDetail = () => {
               <div className="service-testimonials-left">
                 <p>{localizedService.testimonialsLabel || text.testimonialsLabel}</p>
 
-                <h2>{localizedService.testimonialsTitle || text.testimonialsTitle}</h2>
+                <h2>
+                  {localizedService.testimonialsTitle || text.testimonialsTitle}
+                </h2>
 
-                <span>{localizedService.testimonialsDescription || text.testimonialsDescription}</span>
+                <span>
+                  {localizedService.testimonialsDescription ||
+                    text.testimonialsDescription}
+                </span>
 
                 <button type="button">
                   <img src={leaveReviewIcon} alt="" />
@@ -1155,7 +2015,9 @@ const ServiceDetail = () => {
 
                 <h3>{localizedService.videoReviewName || reviews[0]?.name}</h3>
 
-                <p>{localizedService.videoReviewSubtitle || reviews[0]?.subtitle}</p>
+                <p>
+                  {localizedService.videoReviewSubtitle || reviews[0]?.subtitle}
+                </p>
 
                 <img
                   src={reviewBawsalaLogo}
@@ -1259,10 +2121,70 @@ const ServiceDetail = () => {
 
 function FormGroup({ label, htmlFor, full = false, children }) {
   return (
-    <div className={`service-request-form__group ${full ? "service-request-form__group--full" : ""}`}>
+    <div
+      className={`service-request-form__group ${
+        full ? "service-request-form__group--full" : ""
+      }`}
+    >
       <label htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
+  );
+}
+
+function ServiceSpecificField({ field, language, value, onChange, required }) {
+  const label = getLocalizedText(field.label, language);
+  const placeholder = getLocalizedText(field.placeholder, language);
+
+  if (field.type === "textarea") {
+    return (
+      <FormGroup label={label} htmlFor={field.name} full>
+        <textarea
+          id={field.name}
+          name={field.name}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          required={Boolean(required)}
+        ></textarea>
+      </FormGroup>
+    );
+  }
+
+  if (field.type === "select") {
+    return (
+      <FormGroup label={label} htmlFor={field.name} full>
+        <select
+          id={field.name}
+          name={field.name}
+          value={value}
+          onChange={onChange}
+          required={Boolean(required)}
+        >
+          <option value="">{placeholder}</option>
+
+          {normalizeList(field.options).map((option) => (
+            <option value={option.value} key={option.value}>
+              {getLocalizedText(option.label, language)}
+            </option>
+          ))}
+        </select>
+      </FormGroup>
+    );
+  }
+
+  return (
+    <FormGroup label={label} htmlFor={field.name} full>
+      <input
+        id={field.name}
+        name={field.name}
+        type={field.type || "text"}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={Boolean(required)}
+      />
+    </FormGroup>
   );
 }
 

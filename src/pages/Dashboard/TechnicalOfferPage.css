@@ -1,0 +1,534 @@
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&display=swap");
+
+.technical-offer-page {
+  min-height: 100vh;
+  background: #f3f5f7;
+  padding: 32px 16px;
+  color: #101828;
+  font-family: "Alexandria", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.technical-offer-actions {
+  width: min(100%, 1000px);
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.technical-offer-action-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.technical-offer-back-btn,
+.technical-offer-print-btn,
+.technical-offer-state a,
+.technical-offer-state button,
+.technical-offer-language-switch button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 17px;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.technical-offer-back-btn,
+.technical-offer-state a,
+.technical-offer-state button {
+  background: #ffffff;
+  color: #101828;
+  border: 1px solid #d8dee8;
+}
+
+.technical-offer-back-btn:hover,
+.technical-offer-state a:hover,
+.technical-offer-state button:hover {
+  background: #f8fafc;
+  border-color: #c9d2df;
+}
+
+.technical-offer-print-btn {
+  background: #009b72;
+  color: #ffffff;
+}
+
+.technical-offer-print-btn:hover {
+  background: #008765;
+}
+
+.technical-offer-language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+}
+
+.technical-offer-language-switch button {
+  min-width: 88px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #475467;
+}
+
+.technical-offer-language-switch button:hover {
+  background: #f2f4f7;
+}
+
+.technical-offer-language-switch button.is-active {
+  background: #101828;
+  color: #ffffff;
+}
+
+.technical-offer-document {
+  width: min(100%, 1000px);
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.technical-offer-cover {
+  background: #0b1220;
+  color: #ffffff;
+  padding: 44px 48px 38px;
+}
+
+.technical-offer-cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 38px;
+}
+
+.technical-offer-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  height: 58px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  padding: 0 16px;
+}
+
+.technical-offer-brand span {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.technical-offer-kicker {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ee7d1;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.technical-offer-heading {
+  max-width: 800px;
+}
+
+[dir="rtl"] .technical-offer-heading {
+  margin-right: auto;
+  text-align: right;
+}
+
+[dir="ltr"] .technical-offer-heading {
+  margin-left: 0;
+  text-align: left;
+}
+
+.technical-offer-cover h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1.28;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+[dir="rtl"] .technical-offer-cover h1 {
+  line-height: 1.38;
+  letter-spacing: -0.018em;
+}
+
+.technical-offer-cover p {
+  max-width: 780px;
+  margin: 18px 0 0;
+  color: #cbd5e1;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 2.05;
+}
+
+.technical-offer-cover-details {
+  margin: 40px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 1.55fr 0.9fr 0.75fr 0.75fr;
+  gap: 26px;
+}
+
+.technical-offer-cover-details div,
+.technical-offer-contact-row dl div,
+.technical-offer-commercial-list div {
+  min-width: 0;
+}
+
+.technical-offer-cover-details dt {
+  margin-bottom: 8px;
+  color: #97a6ba;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.75;
+}
+
+.technical-offer-cover-details dd {
+  margin: 0;
+}
+
+.technical-offer-cover-details strong {
+  display: block;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.technical-offer-cover-details span {
+  display: block;
+  margin-top: 8px;
+  color: #d1d8e4;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 2;
+}
+
+.technical-offer-contact-row {
+  padding: 24px 48px;
+  border-bottom: 1px solid #e4e7ec;
+  background: #fbfcfd;
+}
+
+.technical-offer-contact-row dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.technical-offer-contact-row dt {
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.7;
+}
+
+.technical-offer-contact-row dd {
+  margin: 0;
+  color: #101828;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.technical-offer-section,
+.technical-offer-commercial-section {
+  padding: 34px 48px;
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.technical-offer-section h2,
+.technical-offer-split-section h2,
+.technical-offer-commercial-section h2 {
+  margin: 0 0 16px;
+  color: #101828;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.55;
+  letter-spacing: -0.025em;
+}
+
+[dir="rtl"] .technical-offer-section h2,
+[dir="rtl"] .technical-offer-split-section h2,
+[dir="rtl"] .technical-offer-commercial-section h2 {
+  line-height: 1.7;
+  letter-spacing: -0.012em;
+}
+
+.technical-offer-section h2::after,
+.technical-offer-split-section h2::after,
+.technical-offer-commercial-section h2::after {
+  content: "";
+  display: block;
+  width: 46px;
+  height: 3px;
+  margin-top: 10px;
+  background: #009b72;
+  border-radius: 999px;
+}
+
+.technical-offer-section p,
+.technical-offer-split-section p {
+  margin: 0;
+  color: #344054;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 2.15;
+  white-space: pre-wrap;
+}
+
+.technical-offer-split-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 34px;
+  padding: 34px 48px;
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.technical-offer-split-section > div {
+  min-width: 0;
+}
+
+.technical-offer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid #e4e7ec;
+}
+
+.technical-offer-list li {
+  position: relative;
+  padding: 15px 0;
+  border-bottom: 1px solid #e4e7ec;
+  color: #344054;
+  line-height: 2.05;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+[dir="rtl"] .technical-offer-list li {
+  padding-right: 24px;
+}
+
+[dir="ltr"] .technical-offer-list li {
+  padding-left: 24px;
+}
+
+.technical-offer-list li::before {
+  content: "";
+  position: absolute;
+  top: 28px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #009b72;
+}
+
+[dir="rtl"] .technical-offer-list li::before {
+  right: 0;
+}
+
+[dir="ltr"] .technical-offer-list li::before {
+  left: 0;
+}
+
+.technical-offer-commercial-list {
+  margin: 20px 0 0;
+  border-top: 1px solid #d0d5dd;
+}
+
+.technical-offer-commercial-list div {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.45fr) minmax(0, 1fr);
+  gap: 26px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.technical-offer-commercial-list dt {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.9;
+}
+
+.technical-offer-commercial-list dd {
+  margin: 0;
+  color: #101828;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.technical-offer-footer {
+  padding: 28px 48px;
+  background: #fbfcfd;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.technical-offer-footer strong {
+  color: #101828;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.7;
+}
+
+.technical-offer-footer span {
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.technical-offer-state {
+  width: min(100%, 620px);
+  margin: 80px auto;
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  padding: 42px;
+  text-align: center;
+}
+
+.technical-offer-state h1 {
+  margin: 0 0 22px;
+  font-size: 24px;
+  line-height: 1.6;
+  color: #101828;
+}
+
+@media (max-width: 900px) {
+  .technical-offer-cover,
+  .technical-offer-section,
+  .technical-offer-split-section,
+  .technical-offer-commercial-section,
+  .technical-offer-footer,
+  .technical-offer-contact-row {
+    padding: 28px 22px;
+  }
+
+  .technical-offer-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .technical-offer-action-group {
+    justify-content: space-between;
+  }
+
+  .technical-offer-back-btn,
+  .technical-offer-print-btn {
+    text-align: center;
+  }
+
+  .technical-offer-cover-top {
+    align-items: flex-start;
+  }
+
+  .technical-offer-cover-details,
+  .technical-offer-contact-row dl,
+  .technical-offer-split-section {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .technical-offer-commercial-list div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .technical-offer-cover h1 {
+    font-size: 34px;
+  }
+}
+
+@media (max-width: 640px) {
+  .technical-offer-page {
+    padding: 18px 10px;
+  }
+
+  .technical-offer-document {
+    border-radius: 14px;
+  }
+
+  .technical-offer-cover-top {
+    flex-direction: column;
+  }
+
+  .technical-offer-action-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .technical-offer-language-switch {
+    width: 100%;
+  }
+
+  .technical-offer-language-switch button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .technical-offer-cover h1 {
+    font-size: 30px;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .technical-offer-page {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .technical-offer-document {
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .technical-offer-cover {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .technical-offer-section,
+  .technical-offer-split-section,
+  .technical-offer-commercial-section {
+    break-inside: avoid;
+  }
+}

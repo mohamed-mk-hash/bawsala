@@ -17,6 +17,8 @@ import {
   getDoc,
   getDocs,
   query,
+  serverTimestamp,
+  setDoc,
   where,
 } from "firebase/firestore";
 
@@ -47,7 +49,25 @@ const TRANSLATIONS = {
     productsDescription: "Products you bought and can access.",
     myOrders: "My orders",
     ordersDescription: "Only paid orders are shown here.",
+    requestedServices: "Requested services",
+    requestedServicesDescription: "Services you requested and their review status.",
+    loadingRequestedServices: "Loading requested services...",
+    noRequestedServices: "You have not requested any services yet.",
+    browseServices: "Browse services",
+    serviceRequestNumber: "Request number",
+    serviceName: "Service",
+    serviceStatus: "Service status",
+    submittedAt: "Submitted at",
+    requestDetails: "Request details",
+    serviceSpecificAnswers: "Service details",
+    requestMessage: "Message",
+    notProvided: "Not provided",
     logout: "Log out",
+
+    technicalOffer: "Technical offer",
+    technicalOfferReady: "Your technical offer is ready.",
+    viewTechnicalOffer: "View technical offer",
+    rejectionReason: "Rejection reason",
 
     change: "Change",
     firstName: "First name",
@@ -106,6 +126,7 @@ const TRANSLATIONS = {
     paid: "Paid",
     pending: "Waiting for admin review",
     approved: "Approved",
+    accepted: "Accepted",
     rejected: "Rejected",
     cancelled: "Cancelled",
     failed: "Failed",
@@ -132,7 +153,25 @@ const TRANSLATIONS = {
     productsDescription: "المنتجات التي قمت بشرائها ويمكنك الوصول إليها.",
     myOrders: "طلباتي",
     ordersDescription: "تظهر هنا الطلبات المدفوعة فقط.",
+    requestedServices: "الخدمات المطلوبة",
+    requestedServicesDescription: "الخدمات التي قمت بطلبها وحالة مراجعتها.",
+    loadingRequestedServices: "جاري تحميل الخدمات المطلوبة...",
+    noRequestedServices: "لم تقم بطلب أي خدمة بعد.",
+    browseServices: "تصفح الخدمات",
+    serviceRequestNumber: "رقم الطلب",
+    serviceName: "الخدمة",
+    serviceStatus: "حالة الخدمة",
+    submittedAt: "تاريخ الإرسال",
+    requestDetails: "تفاصيل الطلب",
+    serviceSpecificAnswers: "تفاصيل الخدمة",
+    requestMessage: "الرسالة",
+    notProvided: "غير متوفر",
     logout: "تسجيل الخروج",
+
+    technicalOffer: "العرض الفني",
+    technicalOfferReady: "العرض الفني الخاص بك جاهز.",
+    viewTechnicalOffer: "عرض العرض الفني",
+    rejectionReason: "سبب الرفض",
 
     change: "تغيير",
     firstName: "الاسم",
@@ -191,6 +230,7 @@ const TRANSLATIONS = {
     paid: "مدفوع",
     pending: "في انتظار مراجعة الإدارة",
     approved: "مقبول",
+    accepted: "مقبول",
     rejected: "مرفوض",
     cancelled: "ملغي",
     failed: "فشل",
@@ -320,6 +360,73 @@ const getReadableOrderNumber = (order) => {
   return parts.length >= 2 ? `#${parts[1].slice(-6)}` : `#${value.slice(-6)}`;
 };
 
+const getReadableServiceRequestNumber = (request) => {
+  const value = request.requestId || request.id || "";
+  const parts = value.split("_");
+  return parts.length >= 2 ? `#${parts[1].slice(-6)}` : `#${value.slice(-6)}`;
+};
+
+const getServiceRequestStatus = (request) => {
+  return (
+    request.requestStatus ||
+    request.adminStatus ||
+    request.status ||
+    "pending"
+  );
+};
+
+const canViewTechnicalOffer = (request) => {
+  const status = normalizeStatus(getServiceRequestStatus(request));
+
+  return (
+    (status === "approved" || status === "accepted") &&
+    Boolean(request.technicalOfferId || request.technicalOfferUrl)
+  );
+};
+
+const isRejectedServiceRequest = (request) => {
+  return normalizeStatus(getServiceRequestStatus(request)) === "rejected";
+};
+
+const getTechnicalOfferPath = (request) => {
+  if (request.technicalOfferId) {
+    return `/technical-offers/${request.technicalOfferId}`;
+  }
+
+  return request.technicalOfferUrl || "";
+};
+
+const getStatusClassName = (status) => {
+  return normalizeStatus(status).replace(/[^a-z0-9-]+/g, "-");
+};
+
+const getReadableFieldName = (fieldName) => {
+  return String(fieldName || "")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/[-_]/g, " ")
+    .replace(/^./, (letter) => letter.toUpperCase());
+};
+
+const formatRequestValue = (value, t) => {
+  if (value === null || value === undefined || value === "") {
+    return t.notProvided || t.unknown;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value.map(String).join(", ") : t.notProvided || t.unknown;
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value);
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
 
@@ -353,9 +460,11 @@ const Dashboard = () => {
   const [purchasedCourses, setPurchasedCourses] = useState([]);
   const [purchasedProducts, setPurchasedProducts] = useState([]);
   const [userOrders, setUserOrders] = useState([]);
+  const [requestedServices, setRequestedServices] = useState([]);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingRequestedServices, setLoadingRequestedServices] = useState(false);
 
   useEffect(() => {
     const handleLanguageChanged = (event) => {
@@ -412,6 +521,7 @@ const Dashboard = () => {
       setPurchasedCourses([]);
       setPurchasedProducts([]);
       setUserOrders([]);
+      setRequestedServices([]);
       return;
     }
 
@@ -518,8 +628,40 @@ const Dashboard = () => {
       }
     };
 
+    const fetchRequestedServices = async () => {
+      try {
+        setLoadingRequestedServices(true);
+
+        const serviceRequestsQuery = query(
+          collection(db, "serviceRequests"),
+          where("userId", "==", currentUser.uid)
+        );
+
+        const serviceRequestsSnapshot = await getDocs(serviceRequestsQuery);
+
+        const requests = serviceRequestsSnapshot.docs
+          .map((docItem) => ({
+            id: docItem.id,
+            ...docItem.data(),
+          }))
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toMillis?.() || 0;
+            const bTime = b.createdAt?.toMillis?.() || 0;
+            return bTime - aTime;
+          });
+
+        setRequestedServices(requests);
+      } catch (error) {
+        console.error("Error loading requested services:", error);
+        setRequestedServices([]);
+      } finally {
+        setLoadingRequestedServices(false);
+      }
+    };
+
     fetchUserPurchases();
     fetchUserOrders();
+    fetchRequestedServices();
   }, [currentUser]);
 
   const fullName = `${profileInfo.firstName} ${profileInfo.lastName}`.trim();
@@ -529,6 +671,13 @@ const Dashboard = () => {
       (order) => normalizeStatus(order.adminStatus) === "approved"
     ).length;
   }, [userOrders]);
+
+  const approvedServiceRequests = useMemo(() => {
+    return requestedServices.filter((request) => {
+      const status = normalizeStatus(getServiceRequestStatus(request));
+      return status === "approved" || status === "accepted";
+    }).length;
+  }, [requestedServices]);
 
   const handleProfileChange = (event) => {
     const { name, value } = event.target;
@@ -548,42 +697,113 @@ const Dashboard = () => {
     }));
   };
 
+  const resizeProfileImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const image = new Image();
+
+        image.onload = () => {
+          const maxSize = 420;
+          const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(image.width * scale);
+          canvas.height = Math.round(image.height * scale);
+
+          const context = canvas.getContext("2d");
+
+          if (!context) {
+            reject(new Error("Could not prepare image."));
+            return;
+          }
+
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          const compressedImage = canvas.toDataURL("image/jpeg", 0.75);
+          resolve(compressedImage);
+        };
+
+        image.onerror = reject;
+        image.src = reader.result;
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const saveUserProfileToFirestore = async (user, profileData) => {
+    if (!user) return;
+
+    await setDoc(
+      doc(db, "users", user.uid),
+      {
+        uid: user.uid,
+        displayName: profileData.displayName || "",
+        fullName: profileData.displayName || "",
+        email: profileData.email || user.email || "",
+        phone: profileData.phone || "",
+        photoURL: profileData.photoURL || "",
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
-    const reader = new FileReader();
+    const updateImage = async () => {
+      try {
+        const imageDataUrl = await resizeProfileImage(file);
 
-    reader.onload = async () => {
-      const imageDataUrl = reader.result;
+        setProfileImage(imageDataUrl);
 
-      setProfileImage(imageDataUrl);
+        if (currentUser) {
+          const displayName = fullName || currentUser.displayName || "";
 
-      if (currentUser) {
-        const profileData = {
-          ...profileInfo,
-          displayName: fullName,
-          photoURL: imageDataUrl,
-        };
-
-        saveProfileLocally(currentUser.uid, profileData);
-
-        try {
-          await updateProfile(currentUser, {
-            displayName: fullName,
+          const profileData = {
+            ...profileInfo,
+            uid: currentUser.uid,
+            displayName,
             photoURL: imageDataUrl,
-          });
-        } catch (error) {
-          console.error("Firebase profile image update error:", error);
-        }
-      }
+            email: profileInfo.email || currentUser.email || "",
+          };
 
-      setProfileMessageType("success");
-      setProfileMessage(t.imageUpdated);
+          saveProfileLocally(currentUser.uid, profileData);
+
+          await saveUserProfileToFirestore(currentUser, profileData);
+
+          try {
+            await updateProfile(currentUser, {
+              displayName,
+              photoURL: imageDataUrl,
+            });
+          } catch (error) {
+            console.warn("Firebase Auth profile image update skipped:", error);
+          }
+
+          window.dispatchEvent(
+            new CustomEvent("userProfileUpdated", {
+              detail: profileData,
+            })
+          );
+        }
+
+        setProfileMessageType("success");
+        setProfileMessage(t.imageUpdated);
+      } catch (error) {
+        console.error("Profile image update error:", error);
+        setProfileMessageType("error");
+        setProfileMessage(t.errorMessage);
+      }
     };
 
-    reader.readAsDataURL(file);
+    updateImage();
   };
 
   const handleProfileSubmit = async (event) => {
@@ -610,6 +830,8 @@ const Dashboard = () => {
       };
 
       saveProfileLocally(currentUser.uid, profileData);
+
+      await saveUserProfileToFirestore(currentUser, profileData);
 
       setProfileMessageType("success");
       setProfileMessage(t.profileSaved);
@@ -723,6 +945,38 @@ const Dashboard = () => {
     );
   };
 
+  const renderServiceRequestDetails = (request) => {
+    const answers = request.serviceSpecificAnswers || {};
+    const questionLabels = request.serviceSpecificQuestionLabels || {};
+    const answerEntries = Object.entries(answers);
+
+    if (answerEntries.length === 0 && !request.message) {
+      return <p className="dashboard-order-friendly-empty">{t.notProvided}</p>;
+    }
+
+    return (
+      <div className="dashboard-order-friendly-items">
+        <p>{t.requestDetails}</p>
+
+        <div className="dashboard-order-friendly-grid">
+          {answerEntries.map(([fieldName, value]) => (
+            <div className="dashboard-order-friendly-item" key={fieldName}>
+              <span>{questionLabels[fieldName] || getReadableFieldName(fieldName)}</span>
+              <strong>{formatRequestValue(value, t)}</strong>
+            </div>
+          ))}
+
+          {request.message && (
+            <div className="dashboard-order-friendly-item">
+              <span>{t.requestMessage}</span>
+              <strong>{request.message}</strong>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <main className="dashboard-page" dir={isArabic ? "rtl" : "ltr"}>
       <section className="dashboard-hero-section">
@@ -765,8 +1019,13 @@ const Dashboard = () => {
               </div>
 
               <div className="dashboard-stat-card">
-                <strong>{approvedOrders}</strong>
+                <strong>{approvedOrders + approvedServiceRequests}</strong>
                 <span>{t.approvedOrders}</span>
+              </div>
+
+              <div className="dashboard-stat-card">
+                <strong>{requestedServices.length}</strong>
+                <span>{t.requestedServices}</span>
               </div>
             </div>
           </div>
@@ -819,6 +1078,16 @@ const Dashboard = () => {
             <button
               type="button"
               className={`dashboard-sidebar-btn ${
+                activeTab === "requested-services" ? "active" : ""
+              }`}
+              onClick={() => setActiveTab("requested-services")}
+            >
+              {t.requestedServices}
+            </button>
+
+            <button
+              type="button"
+              className={`dashboard-sidebar-btn ${
                 activeTab === "orders" ? "active" : ""
               }`}
               onClick={() => setActiveTab("orders")}
@@ -845,10 +1114,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <form
-                  className="dashboard-form"
-                  onSubmit={handleProfileSubmit}
-                >
+                <form className="dashboard-form" onSubmit={handleProfileSubmit}>
                   <div className="dashboard-form-grid">
                     <div className="dashboard-form-group">
                       <label htmlFor="firstName">{t.firstName}</label>
@@ -930,10 +1196,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <form
-                  className="dashboard-form"
-                  onSubmit={handlePasswordSubmit}
-                >
+                <form className="dashboard-form" onSubmit={handlePasswordSubmit}>
                   <div className="dashboard-form-grid dashboard-form-grid--password">
                     <div className="dashboard-form-group dashboard-form-group--full">
                       <label htmlFor="currentPassword">
@@ -1162,7 +1425,11 @@ const Dashboard = () => {
                   <div className="dashboard-products-grid">
                     {purchasedProducts.map((product, index) => {
                       const title = getProductTitle(product, language);
-                      const imageUrl = product.imageUrl || product.featuredImageUrl || product.image || courseImage;
+                      const imageUrl =
+                        product.imageUrl ||
+                        product.featuredImageUrl ||
+                        product.image ||
+                        courseImage;
                       const price = product.price || product.priceValue || 0;
 
                       return (
@@ -1202,6 +1469,129 @@ const Dashboard = () => {
                               {t.viewProduct}
                             </Link>
                           </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {activeTab === "requested-services" && (
+              <section className="dashboard-panel">
+                <div className="dashboard-panel-header">
+                  <div>
+                    <h2>{t.requestedServices}</h2>
+                    <p>{t.requestedServicesDescription}</p>
+                  </div>
+                </div>
+
+                {loadingRequestedServices ? (
+                  <p className="dashboard-empty-message">{t.loadingRequestedServices}</p>
+                ) : requestedServices.length === 0 ? (
+                  <div className="dashboard-empty-state">
+                    <p>{t.noRequestedServices}</p>
+                    <Link to="/services" className="dashboard-primary-btn">
+                      {t.browseServices}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="dashboard-orders-list">
+                    {requestedServices.map((request) => {
+                      const requestStatus = getServiceRequestStatus(request);
+                      const serviceTitle =
+                        request.serviceTitle ||
+                        request.serviceSlug ||
+                        request.serviceType ||
+                        t.notProvided;
+
+                      const technicalOfferPath = getTechnicalOfferPath(request);
+
+                      return (
+                        <article className="dashboard-order-card" key={request.id}>
+                          <div className="dashboard-order-head">
+                            <div>
+                              <p className="dashboard-order-label">
+                                {t.serviceRequestNumber}
+                              </p>
+                              <h3>{getReadableServiceRequestNumber(request)}</h3>
+                            </div>
+
+                            <span
+                              className={`dashboard-order-status dashboard-order-status--${getStatusClassName(
+                                requestStatus
+                              )}`}
+                            >
+                              {getStatusLabel(requestStatus, t)}
+                            </span>
+                          </div>
+
+                          <div className="dashboard-order-grid">
+                            <div>
+                              <span>{t.submittedAt}</span>
+                              <strong>
+                                {formatDate(request.createdAt, isArabic) || t.notProvided}
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>{t.serviceName}</span>
+                              <strong>{serviceTitle}</strong>
+                            </div>
+
+                            <div>
+                              <span>{t.serviceStatus}</span>
+                              <strong>{getStatusLabel(requestStatus, t)}</strong>
+                            </div>
+
+                            <div>
+                              <span>{t.email}</span>
+                              <strong>
+                                {request.userEmail || request.email || t.notProvided}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {canViewTechnicalOffer(request) && (
+                            <div className="dashboard-service-offer-card">
+                              <div>
+                                <span>{t.technicalOffer}</span>
+                                <strong>{t.technicalOfferReady}</strong>
+                              </div>
+
+                              {technicalOfferPath.startsWith("http") ? (
+                                <a
+                                  href={technicalOfferPath}
+                                  className="dashboard-service-offer-btn"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {t.viewTechnicalOffer}
+                                </a>
+                              ) : (
+                                <Link
+                                  to={technicalOfferPath}
+                                  className="dashboard-service-offer-btn"
+                                >
+                                  {t.viewTechnicalOffer}
+                                </Link>
+                              )}
+                            </div>
+                          )}
+
+                          {isRejectedServiceRequest(request) && (
+                            <div className="dashboard-service-rejected-card">
+                              <strong>{t.rejected}</strong>
+
+                              {request.rejectionReason && (
+                                <p>
+                                  {t.rejectionReason}: {request.rejectionReason}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {renderServiceRequestDetails(request)}
                         </article>
                       );
                     })}

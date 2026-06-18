@@ -60,6 +60,8 @@ const LOGIN_TEXT = {
     backHome: "Back to home",
     emailRequired: "Please enter your email.",
     passwordRequired: "Please enter your password.",
+    serviceRequestNoticeTitle: "Login required",
+    serviceRequestNoticeMessage: "Please log in to request this service.",
     visualTitle: "Your business. Our consultations we ‘re in this together",
     visualSubtitle:
       "Strategic consulting designed to align with your goals, solve real challenges, and grow your business — side by side.",
@@ -84,6 +86,8 @@ const LOGIN_TEXT = {
     backHome: "Retour à l’accueil",
     emailRequired: "Veuillez entrer votre email.",
     passwordRequired: "Veuillez entrer votre mot de passe.",
+    serviceRequestNoticeTitle: "Connexion requise",
+    serviceRequestNoticeMessage: "Veuillez vous connecter pour demander ce service.",
     visualTitle: "Votre entreprise. Nos consultations, ensemble",
     visualSubtitle:
       "Un accompagnement stratégique conçu pour s’aligner avec vos objectifs, résoudre vos défis réels et faire grandir votre entreprise — côte à côte.",
@@ -108,6 +112,8 @@ const LOGIN_TEXT = {
     backHome: "العودة للرئيسية",
     emailRequired: "يرجى إدخال البريد الإلكتروني.",
     passwordRequired: "يرجى إدخال كلمة المرور.",
+    serviceRequestNoticeTitle: "تسجيل الدخول مطلوب",
+    serviceRequestNoticeMessage: "يرجى تسجيل الدخول لطلب هذه الخدمة.",
     visualTitle: "عملك. واستشاراتنا معاً في نفس الطريق",
     visualSubtitle:
       "استشارات استراتيجية مصممة لتتوافق مع أهدافك، وتعالج تحدياتك الحقيقية، وتساعد عملك على النمو خطوة بخطوة.",
@@ -161,8 +167,11 @@ const getFirebaseErrorMessage = (error, language) => {
 const Login = () => {
   const [language, setLanguage] = useState(getInitialLanguage);
   const navigate = useNavigate();
-const [searchParams] = useSearchParams();
-const redirectPath = searchParams.get("redirect") || "/";
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
+  const showServiceRequestNotice = searchParams.get("notice") === "service-request";
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeActive, setNoticeActive] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -195,6 +204,35 @@ const redirectPath = searchParams.get("redirect") || "/";
       window.removeEventListener("storage", handleStorageChanged);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showServiceRequestNotice) {
+      setNoticeVisible(false);
+      setNoticeActive(false);
+      return;
+    }
+
+    setNoticeVisible(true);
+    setNoticeActive(false);
+
+    const enterTimer = window.setTimeout(() => {
+      setNoticeActive(true);
+    }, 50);
+
+    const exitTimer = window.setTimeout(() => {
+      setNoticeActive(false);
+    }, 5000);
+
+    const removeTimer = window.setTimeout(() => {
+      setNoticeVisible(false);
+    }, 5600);
+
+    return () => {
+      window.clearTimeout(enterTimer);
+      window.clearTimeout(exitTimer);
+      window.clearTimeout(removeTimer);
+    };
+  }, [showServiceRequestNotice]);
 
   const applyAuthPersistence = async () => {
     await setPersistence(
@@ -289,6 +327,56 @@ const redirectPath = searchParams.get("redirect") || "/";
       className={`signin-page ${isArabic ? "signin-page--rtl" : ""}`}
       dir={isArabic ? "rtl" : "ltr"}
     >
+      {noticeVisible && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            top: "24px",
+            right: "24px",
+            zIndex: 9999,
+            transform: noticeActive
+              ? "translateX(0)"
+              : "translateX(calc(100% + 48px))",
+            opacity: noticeActive ? 1 : 0,
+            transition:
+              "transform 600ms cubic-bezier(0.22, 1, 0.36, 1), opacity 600ms ease",
+            pointerEvents: "none",
+            width: "min(360px, calc(100vw - 32px))",
+            padding: "16px 18px",
+            borderRadius: "16px",
+            background: "#111827",
+            color: "#ffffff",
+            boxShadow: "0 22px 50px rgba(15, 23, 42, 0.24)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            textAlign: isArabic ? "right" : "left",
+          }}
+        >
+          <strong
+            style={{
+              display: "block",
+              marginBottom: "4px",
+              fontSize: "15px",
+              lineHeight: 1.4,
+            }}
+          >
+            {text.serviceRequestNoticeTitle}
+          </strong>
+
+          <span
+            style={{
+              display: "block",
+              fontSize: "14px",
+              lineHeight: 1.6,
+              color: "rgba(255, 255, 255, 0.86)",
+            }}
+          >
+            {text.serviceRequestNoticeMessage}
+          </span>
+        </div>
+      )}
+
       <div className="signin-container">
         <div className="signin-left">
           <div className="signin-form-wrapper">
