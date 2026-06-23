@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
@@ -411,6 +412,287 @@ app.post("/api/course-module-video", async (req, res) => {
     });
   }
 });
+
+
+/* =========================
+   Newsletter verification
+========================= */
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function createOtpCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function hashOtp(code) {
+  return crypto.createHash("sha256").update(String(code)).digest("hex");
+}
+
+async function saveNewsletterSubscriber({
+  email,
+  userId = null,
+  language = "en",
+  verifiedBy = "otp",
+}) {
+  const subscriberRef = db.collection("newsletterSubscribers").doc(email);
+
+  await subscriberRef.set(
+    {
+      email,
+      userId,
+      language,
+      subscribed: true,
+      verified: true,
+      verifiedBy,
+      source: "blogs_page",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+app.get("/api/newsletter/status", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.query.email);
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({
+        ok: false,
+        message: "INVALID_EMAIL",
+      });
+    }
+
+    const subscriberSnapshot = await db
+      .collection("newsletterSubscribers")
+      .doc(email)
+      .get();
+
+    const subscribed =
+      subscriberSnapshot.exists &&
+      subscriberSnapshot.data()?.subscribed === true;
+
+    return res.json({
+      ok: true,
+      subscribed,
+    });
+  } catch (error) {
+    console.error("Newsletter status error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: error?.message || "Could not check newsletter status.",
+    });
+  }
+});
+
+app.post("/api/newsletter/request-verification", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const accountEmail = normalizeEmail(req.body.accountEmail);
+    const userId = req.body.userId || null;
+    const language = req.body.language === "ar" ? "ar" : "en";
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({
+        ok: false,
+        message: "INVALID_EMAIL",
+      });
+    }
+
+    const subscriberRef = db.collection("newsletterSubscribers").doc(email);
+    const subscriberSnapshot = await subscriberRef.get();
+
+    if (subscriberSnapshot.exists && subscriberSnapshot.data()?.subscribed) {
+      return res.status(409).json({
+        ok: false,
+        message: "MAIL_ALREADY_EXISTS",
+      });
+    }
+
+    if (
+      !process.env.SMTP_HOST ||
+      !process.env.SMTP_USER ||
+      !process.env.SMTP_PASS
+    ) {
+      return res.status(500).json({
+        ok: false,
+        message: "SMTP_CONFIGURATION_MISSING",
+      });
+    }
+
+    const otpCode = createOtpCode();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    await db.collection("newsletterOtp").doc(email).set({
+      email,
+      userId,
+      language,
+      otpHash: hashOtp(otpCode),
+      expiresAt,
+      attempts: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await contactEmailTransporter.sendMail({
+  from: `"Bawsala" <${process.env.SMTP_USER}>`,
+  to: email,
+  subject:
+    language === "ar"
+      ? "رمز تأكيد الاشتراك في نشرة بوصلة"
+      : "Confirm your Bawsala newsletter subscription",
+  html: `
+    <div style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#101828;">
+      <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+        <div style="background:#ffffff;border-radius:20px;padding:32px;border:1px solid #e5e7eb;box-shadow:0 18px 45px rgba(16,24,40,0.08);">
+          <div style="text-align:center;margin-bottom:24px;">
+            <h1 style="margin:0;font-size:24px;line-height:1.3;color:#101828;">
+              ${language === "ar" ? "تأكيد الاشتراك" : "Confirm your subscription"}
+            </h1>
+            <p style="margin:10px 0 0;color:#667085;font-size:15px;line-height:1.6;">
+              ${
+                language === "ar"
+                  ? "استخدم الرمز التالي لتأكيد اشتراكك في نشرة بوصلة البريدية."
+                  : "Use the code below to confirm your Bawsala newsletter subscription."
+              }
+            </p>
+          </div>
+
+          <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:16px;text-align:center;padding:22px;margin:24px 0;">
+            <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#1570ef;">
+              ${otpCode}
+            </div>
+          </div>
+
+          <p style="margin:0;color:#667085;font-size:14px;line-height:1.7;text-align:center;">
+            ${
+              language === "ar"
+                ? "هذا الرمز صالح لمدة 10 دقائق فقط."
+                : "This code is valid for 10 minutes only."
+            }
+          </p>
+        </div>
+
+        <p style="text-align:center;color:#98a2b3;font-size:12px;margin-top:18px;">
+          © Bawsala
+        </p>
+      </div>
+    </div>
+  `,
+  text:
+    language === "ar"
+      ? `رمز تأكيد الاشتراك: ${otpCode}\nهذا الرمز صالح لمدة 10 دقائق فقط.`
+      : `Your confirmation code is: ${otpCode}\nThis code is valid for 10 minutes only.`,
+});
+
+    return res.json({
+      ok: true,
+      alreadyVerified: false,
+      message: "Verification code sent.",
+    });
+  } catch (error) {
+    console.error("Newsletter request verification error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: error?.message || "Could not send verification code.",
+    });
+  }
+});
+
+app.post("/api/newsletter/verify", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const code = String(req.body.code || "").trim();
+
+    if (!email || !code) {
+      return res.status(400).json({
+        ok: false,
+        message: "MISSING_EMAIL_OR_CODE",
+      });
+    }
+
+    const subscriberRef = db.collection("newsletterSubscribers").doc(email);
+    const subscriberSnapshot = await subscriberRef.get();
+
+    if (subscriberSnapshot.exists && subscriberSnapshot.data()?.subscribed) {
+      return res.status(409).json({
+        ok: false,
+        message: "MAIL_ALREADY_EXISTS",
+      });
+    }
+
+    const otpRef = db.collection("newsletterOtp").doc(email);
+    const otpSnapshot = await otpRef.get();
+
+    if (!otpSnapshot.exists) {
+      return res.status(404).json({
+        ok: false,
+        message: "CODE_NOT_FOUND",
+      });
+    }
+
+    const otpData = otpSnapshot.data();
+
+    if (Date.now() > Number(otpData.expiresAt || 0)) {
+      await otpRef.delete();
+
+      return res.status(400).json({
+        ok: false,
+        message: "CODE_EXPIRED",
+      });
+    }
+
+    if (Number(otpData.attempts || 0) >= 5) {
+      await otpRef.delete();
+
+      return res.status(429).json({
+        ok: false,
+        message: "TOO_MANY_ATTEMPTS",
+      });
+    }
+
+    if (hashOtp(code) !== otpData.otpHash) {
+      await otpRef.set(
+        {
+          attempts: admin.firestore.FieldValue.increment(1),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return res.status(400).json({
+        ok: false,
+        message: "INVALID_CODE",
+      });
+    }
+
+    await saveNewsletterSubscriber({
+      email,
+      userId: otpData.userId || null,
+      language: otpData.language || "en",
+      verifiedBy: "otp",
+    });
+
+    await otpRef.delete();
+
+    return res.json({
+      ok: true,
+      message: "Newsletter email verified and saved.",
+    });
+  } catch (error) {
+    console.error("Newsletter verify error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: error?.message || "Could not verify code.",
+    });
+  }
+});
+
 
 /* =========================
    Contact form email

@@ -24,6 +24,9 @@ import ProductDetails from "./pages/ProductDetails/ProductDetails";
 import BlogDetail from "./pages/BlogDetail/BlogDetail";
 import ScrollToTop from "./Components/ScrollToTop";
 import TechnicalOfferPage from "./pages/Dashboard/TechnicalOfferPage";
+import NewsletterVerify from "./pages/NewsletterVerify/NewsletterVerify";
+
+
 export default function App() {
   return (
     <div>
@@ -52,6 +55,7 @@ export default function App() {
         <Route path="/products" element={<Product />} />
         <Route path="/products/:slug" element={<ProductDetails />} />
         <Route path="/technical-offers/:offerId" element={<TechnicalOfferPage />} />
+        <Route path="/newsletter-verify" element={<NewsletterVerify />} />
       </Routes>
       <Footer/>
     </div>

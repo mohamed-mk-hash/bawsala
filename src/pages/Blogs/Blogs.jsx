@@ -6,8 +6,9 @@ import {
   orderBy,
   query,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
-import { db } from "../../firebase";
+import { auth, db } from "../../firebase";
 
 import "./Blogs.css";
 
@@ -135,6 +136,7 @@ export default function Blogs() {
   const [searchValue, setSearchValue] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const isArabic = language === "ar";
 
@@ -142,6 +144,14 @@ export default function Blogs() {
     document.documentElement.lang = language;
     document.documentElement.dir = isArabic ? "rtl" : "ltr";
   }, [language, isArabic]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleLanguageChanged = (event) => {
@@ -415,6 +425,7 @@ export default function Blogs() {
               <NewsletterCard
                 isArabic={isArabic}
                 animationIndex={firstThreeBlogs.length}
+                currentUser={currentUser}
               />
 
               {middleBlogs.map((blog, index) => (
@@ -625,7 +636,147 @@ function PostCard({ blog, categories, language, isArabic, animationIndex = 0 }) 
   );
 }
 
-function NewsletterCard({ isArabic, animationIndex = 0 }) {
+function NewsletterCard({ isArabic, animationIndex = 0, currentUser }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const checkNewsletterStatus = async (emailToCheck) => {
+    const cleanedEmail = String(emailToCheck || "").trim().toLowerCase();
+
+    if (!cleanedEmail) {
+      return false;
+    }
+
+    try {
+      setStatus("checking");
+
+      const response = await fetch(
+        `/api/newsletter/status?email=${encodeURIComponent(
+          cleanedEmail
+        )}`
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Could not check newsletter status");
+      }
+
+      if (result.subscribed) {
+        setEmail(cleanedEmail);
+        setStatus("subscribed");
+        setMessage(
+          isArabic
+            ? "أنت مشترك في النشرة البريدية بالفعل."
+            : "You are already subscribed to the newsletter."
+        );
+        setError("");
+        return true;
+      }
+
+      setStatus("idle");
+      setMessage("");
+      setError("");
+      return false;
+    } catch (err) {
+      console.error("Newsletter status check error:", err);
+      setStatus("idle");
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      setEmail("");
+      setStatus("idle");
+      setMessage("");
+      setError("");
+      return;
+    }
+
+    checkNewsletterStatus(currentUser.email);
+  }, [currentUser?.email, isArabic]);
+
+  const handleFocus = () => {
+    if (!email && currentUser?.email) {
+      setEmail(currentUser.email);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setMessage("");
+    setError("");
+
+    const cleanedEmail = email.trim().toLowerCase();
+
+    if (!cleanedEmail) {
+      setError(
+        isArabic
+          ? "يرجى إدخال بريدك الإلكتروني."
+          : "Please enter your email."
+      );
+      return;
+    }
+
+    try {
+      setStatus("loading");
+
+      const isAlreadySubscribed = await checkNewsletterStatus(cleanedEmail);
+
+      if (isAlreadySubscribed) {
+        setError(
+          isArabic
+            ? "هذا البريد الإلكتروني موجود بالفعل."
+            : "Mail already exists."
+        );
+        return;
+      }
+
+      const response = await fetch(
+        "/api/newsletter/request-verification",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: cleanedEmail,
+            userId: currentUser?.uid || null,
+            accountEmail: currentUser?.email || "",
+            language: isArabic ? "ar" : "en",
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Something went wrong");
+      }
+
+      window.location.href = `/newsletter-verify?email=${encodeURIComponent(
+        cleanedEmail
+      )}&lang=${isArabic ? "ar" : "en"}`;
+    } catch (err) {
+      console.error("Newsletter subscribe error:", err);
+
+      setStatus("idle");
+      setError(
+        err.message === "MAIL_ALREADY_EXISTS"
+          ? isArabic
+            ? "هذا البريد الإلكتروني موجود بالفعل."
+            : "Mail already exists."
+          : isArabic
+          ? "حدث خطأ أثناء إرسال رمز التأكيد."
+          : "There was an error sending the verification code."
+      );
+    }
+  };
+
+  const isSubscribed = status === "subscribed";
+
   return (
     <aside
       className="newsletterCard"
@@ -650,20 +801,56 @@ function NewsletterCard({ isArabic, animationIndex = 0 }) {
           : "No spam. Just the latest releases and tips, interesting articles, and exclusive interviews in your inbox every week."}
       </p>
 
-      <input
-        className="newsletterCard__input"
-        type="email"
-        placeholder={isArabic ? "أدخل بريدك الإلكتروني" : "Enter your email"}
-      />
+      {!isSubscribed && (
+        <>
+          <input
+            className="newsletterCard__input"
+            type="email"
+            value={email}
+            onFocus={handleFocus}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder={isArabic ? "أدخل بريدك الإلكتروني" : "Enter your email"}
+            disabled={status === "checking" || status === "loading"}
+          />
 
-      <div className="newsletterCard__policy">
-        {isArabic ? "اقرأ عن " : "Read about our "}
-        <a href="#policy">{isArabic ? "سياسة الخصوصية" : "privacy policy"}</a>.
-      </div>
+          <div className="newsletterCard__policy">
+            {isArabic ? "اقرأ عن " : "Read about our "}
+            <a href="#policy">{isArabic ? "سياسة الخصوصية" : "privacy policy"}</a>.
+          </div>
 
-      <button className="newsletterCard__btn" type="button">
-        {isArabic ? "اشترك" : "Subscribe"}
-      </button>
+          <button
+            className="newsletterCard__btn"
+            type="button"
+            onClick={handleSubscribe}
+            disabled={status === "checking" || status === "loading"}
+          >
+            {status === "checking"
+              ? isArabic
+                ? "جاري التحقق..."
+                : "Checking..."
+              : status === "loading"
+              ? isArabic
+                ? "جاري الإرسال..."
+                : "Sending..."
+              : isArabic
+              ? "اشترك"
+              : "Subscribe"}
+          </button>
+        </>
+      )}
+
+      {message && (
+        <p style={{ color: "green", marginTop: "10px", fontWeight: 600 }}>
+          {message}
+        </p>
+      )}
+
+      {error && (
+        <p style={{ color: "red", marginTop: "10px", fontWeight: 600 }}>
+          {error}
+        </p>
+      )}
     </aside>
   );
 }
+
