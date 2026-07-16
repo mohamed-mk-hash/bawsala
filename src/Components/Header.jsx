@@ -8,8 +8,6 @@ import { auth, db } from "../firebase";
 import logo from "../assets/bawsala-logo.png";
 import cartIcon from "../assets/Cart.png";
 import menuIcon from "../assets/menu.png";
-import usaFlag from "../assets/united-states.png";
-import saudiFlag from "../assets/saudi.png";
 import defaultProfileImage from "../assets/manager_product.png";
 
 const ChevronDown = ({ size = 16 }) => (
@@ -33,14 +31,10 @@ const ChevronDown = ({ size = 16 }) => (
 const getInitialLanguage = () => {
   const savedLanguage = localStorage.getItem("site_language");
 
-  if (savedLanguage === "ar") return "Arabic";
-  if (savedLanguage === "en") return "English";
+  if (savedLanguage === "ar") return "ar";
+  if (savedLanguage === "en") return "en";
 
-  return "English";
-};
-
-const getLanguageCode = (language) => {
-  return language === "Arabic" ? "ar" : "en";
+  return "en";
 };
 
 const getSavedProfile = (uid) => {
@@ -54,7 +48,10 @@ const getSavedProfile = (uid) => {
 
 const saveProfileCache = (uid, profileData) => {
   try {
-    localStorage.setItem(`user_profile_${uid}`, JSON.stringify(profileData));
+    localStorage.setItem(
+      `user_profile_${uid}`,
+      JSON.stringify(profileData)
+    );
   } catch (error) {
     console.warn("Could not save profile cache:", error);
   }
@@ -76,6 +73,7 @@ const NAV_LABELS = {
     logout: "Log out",
     cart: "Cart",
     menu: "Menu",
+    language: "Language",
   },
   ar: {
     home: "الرئيسية",
@@ -92,6 +90,7 @@ const NAV_LABELS = {
     logout: "تسجيل الخروج",
     cart: "السلة",
     menu: "القائمة",
+    language: "اللغة",
   },
 };
 
@@ -101,7 +100,9 @@ function NavItem({ label, to = "/", onClick }) {
       to={to}
       end={to === "/"}
       onClick={onClick}
-      className={({ isActive }) => `navItem ${isActive ? "active" : ""}`}
+      className={({ isActive }) =>
+        `navItem ${isActive ? "active" : ""}`
+      }
     >
       <span>{label}</span>
     </NavLink>
@@ -111,7 +112,7 @@ function NavItem({ label, to = "/", onClick }) {
 export default function Header() {
   const navigate = useNavigate();
 
-  const [language, setLanguage] = useState(getInitialLanguage);
+  const [languageCode, setLanguageCode] = useState(getInitialLanguage);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -124,10 +125,8 @@ export default function Header() {
 
   const [cartCount, setCartCount] = useState(0);
 
-  const languageCode = getLanguageCode(language);
   const isArabic = languageCode === "ar";
-
-  const selectedFlag = isArabic ? saudiFlag : usaFlag;
+  const selectedLanguageLabel = isArabic ? "AR" : "EN";
   const labels = NAV_LABELS[languageCode];
 
   const closeMenus = () => {
@@ -191,7 +190,10 @@ export default function Header() {
     const unsubscribe = onSnapshot(
       userRef,
       (snapshot) => {
-        const firestoreProfile = snapshot.exists() ? snapshot.data() : {};
+        const firestoreProfile = snapshot.exists()
+          ? snapshot.data()
+          : {};
+
         const savedProfile = getSavedProfile(currentUser.uid);
 
         const nextProfile = {
@@ -213,7 +215,11 @@ export default function Header() {
         saveProfileCache(currentUser.uid, {
           ...savedProfile,
           ...nextProfile,
-          email: firestoreProfile.email || currentUser.email || savedProfile.email || "",
+          email:
+            firestoreProfile.email ||
+            currentUser.email ||
+            savedProfile.email ||
+            "",
         });
       },
       (error) => {
@@ -231,7 +237,12 @@ export default function Header() {
       return undefined;
     }
 
-    const cartRef = collection(db, "users", currentUser.uid, "cart");
+    const cartRef = collection(
+      db,
+      "users",
+      currentUser.uid,
+      "cart"
+    );
 
     const unsubscribe = onSnapshot(
       cartRef,
@@ -254,7 +265,10 @@ export default function Header() {
 
       if (!user) return;
 
-      if (updatedProfile.uid && updatedProfile.uid !== user.uid) {
+      if (
+        updatedProfile.uid &&
+        updatedProfile.uid !== user.uid
+      ) {
         return;
       }
 
@@ -279,14 +293,24 @@ export default function Header() {
       saveProfileCache(user.uid, {
         ...savedProfile,
         ...nextProfile,
-        email: updatedProfile.email || user.email || savedProfile.email || "",
+        email:
+          updatedProfile.email ||
+          user.email ||
+          savedProfile.email ||
+          "",
       });
     };
 
-    window.addEventListener("userProfileUpdated", handleProfileUpdated);
+    window.addEventListener(
+      "userProfileUpdated",
+      handleProfileUpdated
+    );
 
     return () => {
-      window.removeEventListener("userProfileUpdated", handleProfileUpdated);
+      window.removeEventListener(
+        "userProfileUpdated",
+        handleProfileUpdated
+      );
     };
   }, []);
 
@@ -311,12 +335,15 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
     };
   }, []);
 
-  const handleLanguageChange = (newLanguage) => {
-    setLanguage(newLanguage);
+  const handleLanguageChange = (newLanguageCode) => {
+    setLanguageCode(newLanguageCode);
     setIsLanguageOpen(false);
   };
 
@@ -336,17 +363,28 @@ export default function Header() {
   };
 
   const profileImage =
-    localProfile.photoURL || currentUser?.photoURL || defaultProfileImage;
+    localProfile.photoURL ||
+    currentUser?.photoURL ||
+    defaultProfileImage;
 
   const profileName =
-    localProfile.displayName || currentUser?.displayName || labels.profile;
+    localProfile.displayName ||
+    currentUser?.displayName ||
+    labels.profile;
 
   return (
-    <header className="pageTop" dir={isArabic ? "rtl" : "ltr"}>
+    <header
+      className="pageTop"
+      dir={isArabic ? "rtl" : "ltr"}
+    >
       <div className="headerBox">
         <div className="left">
           <NavLink to="/" onClick={closeMenus}>
-            <img className="logo" src={logo} alt="Bawsala" />
+            <img
+              className="logo"
+              src={logo}
+              alt="Bawsala"
+            />
           </NavLink>
         </div>
 
@@ -367,18 +405,28 @@ export default function Header() {
             aria-label={labels.cart}
             onClick={closeMenus}
           >
-            <img className="cartIcon" src={cartIcon} alt={labels.cart} />
-            {cartCount > 0 && <span className="cartBadge">{cartCount}</span>}
+            <img
+              className="cartIcon"
+              src={cartIcon}
+              alt={labels.cart}
+            />
+
+            {cartCount > 0 && (
+              <span className="cartBadge">{cartCount}</span>
+            )}
           </NavLink>
 
           <div className="languageBox">
             <button
               className="languageBtn"
               type="button"
-              onClick={() => setIsLanguageOpen((previous) => !previous)}
+              aria-label={labels.language}
+              aria-expanded={isLanguageOpen}
+              onClick={() =>
+                setIsLanguageOpen((previous) => !previous)
+              }
             >
-              <img className="flagIcon" src={selectedFlag} alt={language} />
-              <span>{language}</span>
+              <span>{selectedLanguageLabel}</span>
               <ChevronDown size={14} />
             </button>
 
@@ -386,18 +434,16 @@ export default function Header() {
               <div className="languageMenu">
                 <button
                   type="button"
-                  onClick={() => handleLanguageChange("English")}
+                  onClick={() => handleLanguageChange("en")}
                 >
-                  <img className="flagIcon" src={usaFlag} alt="English" />
-                  English
+                  EN
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleLanguageChange("Arabic")}
+                  onClick={() => handleLanguageChange("ar")}
                 >
-                  <img className="flagIcon" src={saudiFlag} alt="Arabic" />
-                  العربية
+                  AR
                 </button>
               </div>
             )}
@@ -409,19 +455,30 @@ export default function Header() {
             className="cartBtn desktopCartBtn"
             to="/cart"
             aria-label={labels.cart}
+            onClick={closeMenus}
           >
-            <img className="cartIcon" src={cartIcon} alt={labels.cart} />
-            {cartCount > 0 && <span className="cartBadge">{cartCount}</span>}
+            <img
+              className="cartIcon"
+              src={cartIcon}
+              alt={labels.cart}
+            />
+
+            {cartCount > 0 && (
+              <span className="cartBadge">{cartCount}</span>
+            )}
           </NavLink>
 
           <div className="languageBox desktopLanguageBox">
             <button
               className="languageBtn"
               type="button"
-              onClick={() => setIsLanguageOpen((previous) => !previous)}
+              aria-label={labels.language}
+              aria-expanded={isLanguageOpen}
+              onClick={() =>
+                setIsLanguageOpen((previous) => !previous)
+              }
             >
-              <img className="flagIcon" src={selectedFlag} alt={language} />
-              <span>{language}</span>
+              <span>{selectedLanguageLabel}</span>
               <ChevronDown size={14} />
             </button>
 
@@ -429,18 +486,16 @@ export default function Header() {
               <div className="languageMenu">
                 <button
                   type="button"
-                  onClick={() => handleLanguageChange("English")}
+                  onClick={() => handleLanguageChange("en")}
                 >
-                  <img className="flagIcon" src={usaFlag} alt="English" />
-                  English
+                  EN
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleLanguageChange("Arabic")}
+                  onClick={() => handleLanguageChange("ar")}
                 >
-                  <img className="flagIcon" src={saudiFlag} alt="Arabic" />
-                  العربية
+                  AR
                 </button>
               </div>
             )}
@@ -448,11 +503,19 @@ export default function Header() {
 
           {!currentUser ? (
             <>
-              <NavLink className="login desktopAuthLink" to="/login">
+              <NavLink
+                className="login desktopAuthLink"
+                to="/login"
+                onClick={closeMenus}
+              >
                 {labels.login}
               </NavLink>
 
-              <NavLink className="signup desktopAuthLink" to="/signin">
+              <NavLink
+                className="signup desktopAuthLink"
+                to="/signin"
+                onClick={closeMenus}
+              >
                 {labels.signup}
               </NavLink>
             </>
@@ -461,7 +524,11 @@ export default function Header() {
               <button
                 type="button"
                 className="profileBtn"
-                onClick={() => setIsProfileOpen((previous) => !previous)}
+                aria-label={labels.profile}
+                aria-expanded={isProfileOpen}
+                onClick={() =>
+                  setIsProfileOpen((previous) => !previous)
+                }
               >
                 <img
                   className="profileImage"
@@ -480,11 +547,17 @@ export default function Header() {
                     <span>{currentUser.email}</span>
                   </div>
 
-                  <button type="button" onClick={handleGoToDashboard}>
+                  <button
+                    type="button"
+                    onClick={handleGoToDashboard}
+                  >
                     {labels.profile}
                   </button>
 
-                  <button type="button" onClick={handleLogout}>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                  >
                     {labels.logout}
                   </button>
                 </div>
@@ -496,8 +569,11 @@ export default function Header() {
         <button
           type="button"
           className="mobileMenuButton"
-          onClick={() => setIsMobileMenuOpen((previous) => !previous)}
+          onClick={() =>
+            setIsMobileMenuOpen((previous) => !previous)
+          }
           aria-label={labels.menu}
+          aria-expanded={isMobileMenuOpen}
         >
           <img src={menuIcon} alt="" />
         </button>
@@ -505,24 +581,42 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="mobileMenuBox">
             <nav className="mobileNav">
-              <NavItem label={labels.home} to="/" onClick={closeMenus} />
-              <NavItem label={labels.about} to="/about" onClick={closeMenus} />
+              <NavItem
+                label={labels.home}
+                to="/"
+                onClick={closeMenus}
+              />
+
+              <NavItem
+                label={labels.about}
+                to="/about"
+                onClick={closeMenus}
+              />
+
               <NavItem
                 label={labels.services}
                 to="/services"
                 onClick={closeMenus}
               />
+
               <NavItem
                 label={labels.courses}
                 to="/courses"
                 onClick={closeMenus}
               />
+
               <NavItem
                 label={labels.products}
                 to="/products"
                 onClick={closeMenus}
               />
-              <NavItem label={labels.blog} to="/blog" onClick={closeMenus} />
+
+              <NavItem
+                label={labels.blog}
+                to="/blog"
+                onClick={closeMenus}
+              />
+
               <NavItem
                 label={labels.contact}
                 to="/contact"
@@ -530,7 +624,7 @@ export default function Header() {
               />
             </nav>
 
-            <div className="mobileMenuDivider"></div>
+            <div className="mobileMenuDivider" />
 
             {!currentUser ? (
               <div className="mobileAuthActions">
@@ -557,7 +651,8 @@ export default function Header() {
                     src={profileImage}
                     alt={profileName}
                     onError={(event) => {
-                      event.currentTarget.src = defaultProfileImage;
+                      event.currentTarget.src =
+                        defaultProfileImage;
                     }}
                   />
 
@@ -567,11 +662,17 @@ export default function Header() {
                   </div>
                 </div>
 
-                <button type="button" onClick={handleGoToDashboard}>
+                <button
+                  type="button"
+                  onClick={handleGoToDashboard}
+                >
                   {labels.profile}
                 </button>
 
-                <button type="button" onClick={handleLogout}>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                >
                   {labels.logout}
                 </button>
               </div>
