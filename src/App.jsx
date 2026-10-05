@@ -25,6 +25,7 @@ import BlogDetail from "./pages/BlogDetail/BlogDetail";
 import ScrollToTop from "./Components/ScrollToTop";
 import TechnicalOfferPage from "./pages/Dashboard/TechnicalOfferPage";
 import NewsletterVerify from "./pages/NewsletterVerify/NewsletterVerify";
+import LiveCourseDetails from "./pages/LiveCourseDetails/LiveCourseDetails";
 
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/careers" element={<Careers/>} />
        <Route path="/courses" element={<Courses />} />
        <Route path="/courses/:slug" element={<CourseDetails />} />
+        <Route path="/courses-live" element={<LiveCourseDetails/>}/>
         <Route path="/Cart" element={<Cart/>} /> 
         <Route path="/Checkout" element={<Checkout/>} /> 
         <Route path="/UserDashboard" element={<Dashboard/>} /> 

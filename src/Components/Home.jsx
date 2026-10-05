@@ -95,7 +95,6 @@ export default function Home() {
       )}
 
       <Hero />
-      <Our_Service />
       <Courses_Programs />
       <Services />
       <Testimonials />

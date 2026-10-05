@@ -1275,36 +1275,33 @@ useEffect(() => {
               {cartError && <p className="details-cart-error">{cartError}</p>}
             </div>
 
-            <a
-              href={catalogPdfUrl || catalogImageUrl}
-              className="details-catalog-card"
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-            >
-              <div className="details-catalog-image-wrap">
-                <img
-                  src={catalogImageUrl}
-                  alt={localizedCourse.catalogTitle || "Course catalogue"}
-                  className="details-catalog-image"
-                />
-              </div>
+            <Link
+  to="/"
+  className="details-catalog-card"
+>
+  <div className="details-catalog-image-wrap">
+    <img
+      src={catalogImageUrl}
+      alt={localizedCourse.catalogTitle || "Course catalogue"}
+      className="details-catalog-image"
+    />
+  </div>
 
-              <div className="details-catalog-content">
-                <h3>
-                  {localizedCourse.catalogTitle ||
-                    (isArabic ? "تحميل الكتالوج" : "Download the catalog")}{" "}
-                  <span>{isArabic ? "←" : "→"}</span>
-                </h3>
+  <div className="details-catalog-content">
+    <h3>
+      {localizedCourse.catalogTitle ||
+        (isArabic ? "تحميل الكتالوج" : "Download the catalog")}{" "}
+      <span>{isArabic ? "←" : "→"}</span>
+    </h3>
 
-                <p>
-                  {localizedCourse.catalogDescription ||
-                    (isArabic
-                      ? "اكتشف جميع محتوياتنا التعليمية"
-                      : "Discover all our learning content")}
-                </p>
-              </div>
-            </a>
+    <p>
+      {localizedCourse.catalogDescription ||
+        (isArabic
+          ? "اكتشف جميع محتوياتنا التعليمية"
+          : "Discover all our learning content")}
+    </p>
+  </div>
+</Link>
           </aside>
 
           <div className="course-details-main">
